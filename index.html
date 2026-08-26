@@ -71,6 +71,16 @@
   }
   body.done::after{ opacity:1; }
 
+  /* ambient phase glow — the whole screen picks up the colour of the third
+     you're in (blue → yellow → green), so a blurry glance across the shower is
+     enough to know how far along you are without reading anything. */
+  body.running::before{
+    content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(130% 75% at 50% 0%, var(--ph, #3ea6ff), transparent 66%);
+    opacity:.24;
+  }
+  body.running.done::before{ opacity:0; }
+
   /* top bar */
   .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .chip{ display:flex; align-items:center; gap:8px; padding:7px 12px 7px 8px; border-radius:999px;
@@ -99,35 +109,58 @@
   .prog{ fill:none; stroke:var(--ice); stroke-width:11; stroke-linecap:round; }
   .readout{ position:absolute; inset:0; display:flex; flex-direction:column;
             align-items:center; justify-content:center; }
-  #time{ font-size:32vw; line-height:.9; font-weight:900; letter-spacing:-.03em;
+  #time{ font-size:34vw; line-height:.9; font-weight:900; letter-spacing:-.03em;
          font-variant-numeric:tabular-nums; white-space:nowrap;
-         color:var(--ice); text-shadow:0 0 14px rgba(0,0,0,.35); }
-  @media(min-width:440px){ #time{ font-size:140px; } }
-  /* the "+bonus" count-up is one character wider — shrink it a touch so the
-     leading + doesn't push the digits out to the edge of the ring. */
-  body.done #time{ font-size:26vw; }
-  @media(min-width:440px){ body.done #time{ font-size:116px; } }
-  #phaseLabel{ margin-top:12px; font-size:15px; letter-spacing:.16em; text-transform:uppercase;
-               font-weight:700; color:var(--ice-dim); min-height:18px; }
+         /* a tight dark shadow only: a coloured halo this big fills the holes in
+            the 0s and softens every edge — exactly what blurred eyes don't need */
+         color:var(--ice); text-shadow:0 3px 16px rgba(0,0,0,.55); }
+  /* The digits auto-size to how many characters they hold (class set in JS), so
+     "10" fills the ring while "+10:00" still fits inside it — glasses off, the
+     number is always as big as it can possibly be. */
+  #time.t1, #time.t2{ font-size:46vw; }
+  #time.t3{ font-size:40vw; }
+  #time.t5{ font-size:26vw; }
+  #time.t6{ font-size:22vw; }
+  @media(min-width:440px){
+    #time{ font-size:145px; }
+    #time.t1, #time.t2{ font-size:180px; }
+    #time.t3{ font-size:160px; }
+    #time.t5{ font-size:112px; }
+    #time.t6{ font-size:95px; }
+  }
+  /* symbol slot under the digits — 🚿 while you get in, ✓ once you've made it.
+     No words: nothing at label size is readable from inside a shower. */
+  #phaseLabel{ margin-top:6px; font-size:66px; line-height:1; font-weight:900; min-height:0; }
 
   /* goal picker */
   .goal{ display:flex; align-items:center; justify-content:center; gap:14px; margin-top:2px;}
-  .step{ width:52px; height:52px; border-radius:50%; border:1px solid rgba(127,227,255,.3);
-         background:var(--card); color:var(--ice); font-size:26px; font-weight:600;
+  .step{ width:62px; height:62px; border-radius:50%; border:1px solid rgba(127,227,255,.3);
+         background:var(--card); color:var(--ice); font-size:34px; font-weight:700;
          display:flex; align-items:center; justify-content:center; }
   .step:active{ background:rgba(127,227,255,.2); }
-  .goalval{ min-width:120px; text-align:center; }
-  .goalval .g{ font-size:34px; font-weight:800; font-variant-numeric:tabular-nums;}
-  .goalval .l{ display:block; font-size:11px; letter-spacing:.18em; text-transform:uppercase;
-               color:rgba(234,247,255,.4); margin-top:2px;}
-  .presets{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:14px;}
-  .pill{ padding:8px 15px; border-radius:999px; font-size:15px; font-weight:600;
-         border:1px solid rgba(127,227,255,.25); background:rgba(127,227,255,.05); color:var(--ice);}
+  .goalval{ min-width:140px; text-align:center; }
+  .goalval .g{ font-size:46px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .goalval .l{ display:block; font-size:13px; letter-spacing:.18em; text-transform:uppercase;
+               color:rgba(234,247,255,.55); margin-top:2px;}
+  .presets{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px;}
+  .pill{ padding:12px 22px; border-radius:999px; font-size:21px; font-weight:800;
+         border:1px solid rgba(127,227,255,.25); background:rgba(127,227,255,.05); color:var(--ice);
+         font-variant-numeric:tabular-nums;}
   .pill.active{ background:var(--ice); color:#04121f; border-color:var(--ice); }
 
+  /* three phase bars — one per third of the goal, filling left to right in
+     blue → yellow → green. Reads as pure shape and colour: no glasses needed. */
+  .segbar{ display:flex; gap:10px; width:100%; max-width:420px; margin-top:18px; }
+  .sg{ flex:1; height:34px; border-radius:999px; overflow:hidden;
+       background:rgba(127,227,255,.13); border:1px solid rgba(127,227,255,.28); }
+  .sg > b{ display:block; height:100%; width:0%; border-radius:999px; }
+  .sg.s1 > b{ background:var(--blue);   box-shadow:0 0 20px var(--blue); }
+  .sg.s2 > b{ background:var(--yellow); box-shadow:0 0 20px var(--yellow); }
+  .sg.s3 > b{ background:var(--go);     box-shadow:0 0 20px var(--go); }
+
   footer{ display:flex; flex-direction:column; gap:12px; align-items:center; }
-  .btn{ width:100%; max-width:420px; height:66px; border:none; border-radius:20px;
-        font-size:22px; font-weight:800; letter-spacing:.02em; color:#04121f;
+  .btn{ width:100%; max-width:420px; height:74px; border:none; border-radius:20px;
+        font-size:26px; font-weight:800; letter-spacing:.04em; color:#04121f;
         background:linear-gradient(180deg,#a6ecff,#63d0f2); box-shadow:0 8px 30px rgba(99,208,242,.35);}
   .btn:active{ transform:translateY(1px); }
   .btn.stop{ background:linear-gradient(180deg,#ff8f9c,#ff5a6e); color:#2a0006;
@@ -136,6 +169,17 @@
               height:52px; font-size:18px; font-weight:700;}
   .linkbtn{ background:none; border:none; color:var(--ice); font-size:16px; font-weight:600; padding:8px; }
   .hide{ display:none !important; }
+
+  /* ===== in-the-shower mode =====
+     No glasses in there, so while a session runs the screen is stripped back to
+     the four things that still read blurred from a metre away: the number, the
+     ring, the three phase bars and one giant button. The title, tagline,
+     version line and every small caption are gone until you're out. */
+  body.running header{ display:none; }
+  body.running .dial{ width:min(100%, 420px); }
+  body.running .track,
+  body.running .prog{ stroke-width:14; }
+  body.running footer .btn{ height:92px; font-size:32px; border-radius:24px; letter-spacing:.08em; }
 
   /* home-screen backup reminder (slim, dismissible) */
   .nudge{ display:flex; align-items:center; gap:10px; width:100%; max-width:420px;
@@ -154,13 +198,25 @@
             -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
             display:flex; flex-direction:column; }
   .center{ align-items:center; justify-content:center; gap:14px; padding:28px; text-align:center; }
-  #overlay .big{ font-size:56px; font-weight:800; font-variant-numeric:tabular-nums; }
-  #overlay .msg{ font-size:18px; color:var(--ink); max-width:320px; line-height:1.4;}
-  #overlay .medal{ font-size:60px; }
+  /* The finish screen is the one you read soaking wet, still with no glasses on.
+     Whole-screen verdict colour, huge number, one short symbol line, no prose. */
+  #overlay.center{ gap:18px; }
+  #overlay .big{ font-size:clamp(72px, 27vw, 124px); font-weight:900; line-height:1;
+                 font-variant-numeric:tabular-nums; text-shadow:0 3px 18px rgba(0,0,0,.55); }
+  #overlay .medal{ font-size:clamp(66px, 19vw, 92px); line-height:1; }
+  #overlay .linkbtn{ font-size:22px; font-weight:800; padding:12px; }
+  #overlay .btn{ height:92px; font-size:32px; border-radius:24px; letter-spacing:.08em; }
+
+  /* the verdict is the colour of the whole screen: green = made it, ice = short */
+  #overlay.hit{ background:
+      radial-gradient(120% 70% at 50% 22%, rgba(44,224,122,.30), transparent 64%),
+      rgba(3,32,18,.95); }
+  #overlay.hit .big{ color:var(--ink); }    /* white on the green screen reads hardest */
+  #overlay.miss .big{ color:var(--ice); }
 
   /* personal-best flourish */
-  .pbbadge{ font-size:15px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#3a2600;
-            background:linear-gradient(180deg,#ffe08a,#f5b83d); padding:8px 18px; border-radius:999px;
+  .pbbadge{ font-size:20px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:#3a2600;
+            background:linear-gradient(180deg,#ffe08a,#f5b83d); padding:10px 22px; border-radius:999px;
             box-shadow:0 6px 22px rgba(245,184,61,.45); }
   #overlay.pb{ background:
       radial-gradient(90% 60% at 50% 32%, rgba(245,184,61,.22), transparent 62%),
@@ -377,6 +433,12 @@
       </div>
     </div>
 
+    <div id="segbar" class="segbar hide" aria-hidden="true">
+      <div class="sg s1"><b></b></div>
+      <div class="sg s2"><b></b></div>
+      <div class="sg s3"><b></b></div>
+    </div>
+
     <div id="picker">
       <div class="goal">
         <button class="step" id="minus" aria-label="Less time">−</button>
@@ -388,17 +450,17 @@
   </main>
 
   <footer>
-    <button class="btn" id="startBtn">Start</button>
+    <button class="btn" id="startBtn">▶ START</button>
   </footer>
 
-  <!-- session summary -->
+  <!-- session summary — glasses off and dripping wet, so: one symbol, one
+       number, one button. The verdict is the colour of the whole screen. -->
   <div id="overlay" class="overlay center hide">
     <div class="medal" id="medal">🏆</div>
     <div class="pbbadge hide" id="ovPB"></div>
     <div class="big" id="ovTime">0:00</div>
-    <div class="msg" id="ovMsg"></div>
-    <button class="btn" id="againBtn" style="max-width:280px;">Go again</button>
-    <button class="linkbtn" id="ovStats">View my stats →</button>
+    <button class="btn" id="againBtn">DONE</button>
+    <button class="linkbtn" id="ovStats">stats →</button>
   </div>
 
   <!-- user picker sheet -->
@@ -488,19 +550,34 @@
         <summary>Getting started <span class="chev">›</span></summary>
         <div class="accbody">
           <p><b>Pick a goal</b> with the 3 / 6 / 9-minute presets, or nudge it ±1 minute with the − / + buttons.</p>
-          <p><b>Tap Start</b> and a <b>10-second lead-in</b> counts you in, giving you time to set the water to cold and step in before timing begins. Tap the dial to skip it, or switch it off under <b>Settings → Timer cues</b>.</p>
-          <p>Let the ring count you down. Tap <b>Stop</b> anytime to end and save the session.</p>
+          <p><b>Tap ▶ START</b> and a <b>10-second lead-in</b> counts you in, giving you time to set the water to cold and step in before timing begins. A big <b>🚿</b> shows while it counts. Tap the dial to skip it, or switch it off under <b>Settings → Timer cues</b>.</p>
+          <p>Let the ring count you down. Tap the big red <b>■ STOP</b> button anytime to end and save the session.</p>
+        </div>
+      </details>
+      <details class="acc">
+        <summary>Reading it with no glasses <span class="chev">›</span></summary>
+        <div class="accbody">
+          <p>You're not wearing glasses in the shower, so the moment a session starts the screen <b>strips itself back</b>: the title, tagline, version line and every small caption disappear until you're out.</p>
+          <p>What's left is only what still reads blurred, from a metre away, through running water:</p>
+          <p><b>1 · The number.</b> It resizes itself to be as large as will fit inside the ring — so <b>10</b> during the lead-in fills the dial, and <b>+10:00</b> in bonus time still fits. It glows in the colour of the phase you're in.</p>
+          <p><b>2 · The three bars</b> under the dial — one per third of your goal — filling left to right in <b>blue → yellow → green</b>. Even if you can't read a single digit, how full the bars are tells you how far along you are.</p>
+          <p><b>3 · The colour of the whole screen</b>, which takes on a wash of the phase colour, then turns fully <b>green</b> the instant you hit your goal.</p>
+          <p><b>4 · One giant button.</b> Nothing else is tappable, so you can't miss it or hit the wrong thing with wet hands.</p>
+          <p>Words are replaced by symbols throughout: <b>🚿</b> get in, <b>✓</b> you've made it, <b>▶</b> start, <b>■</b> stop.</p>
+          <p><b>And the screen after you stop</b> is now down to three things: <b>one emoji</b>, <b>one big number</b> (how long you lasted) and <b>one big button</b>. Whether you hit your goal is the <b>colour of the whole screen</b> — green if you made it, icy blue if you stopped short, gold for a personal best — so there's nothing to read at all while you're dripping.</p>
+          <p>Your goal, how far over or under you were, and everything else moved to <b>Stats</b>, for when your glasses are back on. Tap <b>stats →</b> at the bottom of that screen to go straight there.</p>
         </div>
       </details>
       <details class="acc">
         <summary>The countdown, colours &amp; finish <span class="chev">›</span></summary>
         <div class="accbody">
-          <p>The timer runs through <b>three colour-coded phases</b> across equal thirds of your goal: <b>blue → yellow → green</b>. A glance tells you how far you've come.</p>
+          <p>The timer runs through <b>three colour-coded phases</b> across equal thirds of your goal: <b>blue → yellow → green</b>. The ring, the digits, the three bars under the dial and a wash across the whole screen all carry that colour at once, so a blurry glance tells you how far you've come.</p>
+          <p>The <b>three bars</b> under the dial are one per third. Each fills left to right as you move through it — a progress reading that needs no numbers at all.</p>
           <p>As you cross into the yellow and green thirds, a <b>soft rising chime</b> marks each boundary — so you can track your progress by ear without looking. Turn these <b>phase chimes</b> off under <b>Settings → Timer cues</b> if you prefer silence.</p>
           <p>You'll hear soft <b>3-2-1 beeps</b> just before the finish, then a <b>chime and a big green screen flash</b> the instant you hit your goal.</p>
           <p>When you reach your goal the <b>whole background turns green and stays green</b> for the rest of the session — so you can tell you've made it at a glance, even from across the shower with water running.</p>
           <p>After the goal it flips to a <b>bonus count-up</b>, so you can push past your target and bank extra seconds.</p>
-          <p>Beat your longest-ever shower and the finish screen throws a <b>gold “New personal best!” celebration</b> — a special medal, a warm gold glow and a brighter chime. Every record-setting session is also flagged with a 🏅 in your history.</p>
+          <p>Beat your longest-ever shower and the finish screen turns <b>gold</b> — a 🏅 medal, a short <b>“New best”</b> badge and a brighter chime. Every record-setting session is also flagged with a 🏅 in your history.</p>
         </div>
       </details>
       <details class="acc">
@@ -567,7 +644,7 @@
 
   let phase = 'idle';           // idle | ready | countdown | bonus
   let startAt = 0, readyStart = 0;
-  let raf = null, lastBeepSec = null, lastLeadNum = null, lastCueIdx = 0;
+  let raf = null, lastBeepSec = null, lastLeadNum = null, lastCueIdx = 0, lastPhIdx = -1;
   let audio = null, wakeLock = null;
   let testMode = false;         // 30-second test run — not saved to stats
 
@@ -670,9 +747,26 @@
     prog.style.strokeDashoffset = CIRC * (1 - frac);
     if(color) prog.style.stroke = color;
   }
+  /* The digits are sized by how many characters they hold, so the number is
+     always as large as will fit inside the ring — readable without glasses. */
+  let lastLen = -1;
+  function setTime(txt){
+    const el = $('time');
+    el.textContent = txt;
+    if(txt.length !== lastLen){ lastLen = txt.length; el.className = 't' + Math.min(6, txt.length); }
+  }
+  /* Three phase bars: one per third of the goal, each filling left to right. */
+  const segFills = [...document.querySelectorAll('#segbar .sg > b')];
+  const segPct = [-1, -1, -1];
+  function setSegs(frac){
+    for(let i = 0; i < 3; i++){
+      const pct = Math.round(Math.max(0, Math.min(1, frac * 3 - i)) * 100);
+      if(segPct[i] !== pct){ segPct[i] = pct; segFills[i].style.width = pct + '%'; }
+    }
+  }
   function renderIdle(){
     $('goalText').textContent = fmt(goal);
-    $('time').textContent = fmt(goal);
+    setTime(fmt(goal));
     $('phaseLabel').textContent = '';
     $('time').style.color = '';
     setRing(1, 'var(--ice)');
@@ -695,13 +789,13 @@
       if(t < LEAD){                                 // 10 … 1, ring emptying; soft beeps only for the last 3
         const n = Math.ceil(LEAD - t);
         if(n !== lastLeadNum){ lastLeadNum = n; if(n <= 3) beep(); }
-        $('time').textContent = n;
+        setTime(String(n));
         $('time').style.color = 'var(--ice)';
-        $('phaseLabel').textContent = 'get ready';
+        $('phaseLabel').textContent = '🚿';         // symbol, not words: "get in"
         setRing((LEAD - t) / LEAD, 'var(--ice)');
       } else if(t < LEAD + 0.55){                   // brief "GO"
         if(lastLeadNum !== 0){ lastLeadNum = 0; goBeep(); }
-        $('time').textContent = 'GO';
+        setTime('GO');
         $('time').style.color = 'var(--go)';
         $('phaseLabel').textContent = '';
         setRing(1, 'var(--go)');
@@ -723,15 +817,16 @@
         if(phaseCueOn() && idx > lastCueIdx){ phaseTone(idx); }
         lastCueIdx = idx;
         const col = colorFor(frac);
-        $('time').textContent = fmt(remaining);
+        // whole-screen glow follows the phase, so the colour is unmissable
+        if(idx !== lastPhIdx){ lastPhIdx = idx; document.body.style.setProperty('--ph', PHASE_COLORS[idx]); }
+        setTime(fmt(remaining));
         $('time').style.color = col;
-        $('phaseLabel').textContent = 'remaining';
         setRing(remaining/goal, col);
+        setSegs(frac);
       }
     }
     if(phase === 'bonus'){
-      $('time').textContent = '+' + fmt(elapsed - goal);
-      $('phaseLabel').textContent = 'bonus · keep going';
+      setTime('+' + fmt(elapsed - goal));
       setRing(1, 'var(--go)');
     }
     raf = requestAnimationFrame(tick);
@@ -742,18 +837,26 @@
     document.documentElement.classList.add('done'); // green reaches the bottom safe-area too
     document.body.classList.remove('flash'); void document.body.offsetWidth;
     document.body.classList.add('flash');
-    $('time').style.color = 'var(--go)'; setRing(1, 'var(--go)');
+    // white digits, not green: once the whole screen has gone green, green text
+    // on it is the weakest thing on the display. White is the strongest.
+    $('time').style.color = 'var(--ink)'; setRing(1, 'var(--go)');
+    setSegs(1);                                     // all three bars full green
+    $('phaseLabel').textContent = '✓';              // one symbol, no words
     if(navigator.vibrate) navigator.vibrate([120,60,120,60,220]);
   }
 
   /* ---------- controls ---------- */
   function start(){
     ensureAudio(); keepAwake();
-    lastBeepSec = null; lastCueIdx = 0;
+    lastBeepSec = null; lastCueIdx = 0; lastPhIdx = -1;
     $('picker').classList.add('hide');
     $('topbar').classList.add('hide');
     $('backupNudge').classList.add('hide');
-    const b = $('startBtn'); b.textContent = 'Stop'; b.classList.add('stop'); b.onclick = stop;
+    // strip the screen back for glasses-off reading, and reset the phase bars
+    document.body.classList.add('running');
+    $('segbar').classList.remove('hide');
+    segPct[0] = segPct[1] = segPct[2] = -1; setSegs(0);
+    const b = $('startBtn'); b.textContent = '■ STOP'; b.classList.add('stop'); b.onclick = stop;
     document.body.classList.remove('flash', 'done');
     document.documentElement.classList.remove('done');
     if(leadInOn()){
@@ -797,12 +900,14 @@
   function resetToIdleUI(){
     phase = 'idle';
     if(testMode){ testMode = false; loadGoal(); }   // restore the real goal
-    document.body.classList.remove('flash', 'done');
+    document.body.classList.remove('flash', 'done', 'running');
+    document.body.style.removeProperty('--ph');
     document.documentElement.classList.remove('done');
+    $('segbar').classList.add('hide');
     $('picker').classList.remove('hide');
     $('topbar').classList.remove('hide');
     $('tagline').textContent = 'Set your goal & brace yourself';
-    const b = $('startBtn'); b.textContent = 'Start'; b.classList.remove('stop'); b.onclick = start;
+    const b = $('startBtn'); b.textContent = '▶ START'; b.classList.remove('stop'); b.onclick = start;
     renderIdle();
     maybeShowBackupNudge();
   }
@@ -815,32 +920,29 @@
   }
   function showSummary(elapsed, reached, flags = {}){
     const bonus = Math.max(0, elapsed - goal);
+    const ov = $('overlay');
     $('ovTime').textContent = fmt(elapsed);
-    if(reached){
-      $('medal').textContent = bonus >= 30 ? '🥶🔥' : '🏆';
-      $('ovMsg').innerHTML = bonus >= 1
-        ? `You smashed your <b>${fmt(goal)}</b> goal by <b>${fmt(bonus)}</b>. Ice legend.`
-        : `You hit your <b>${fmt(goal)}</b> goal right on the mark. 💪`;
-    } else {
-      $('medal').textContent = '❄️';
-      $('ovMsg').innerHTML = `Good effort — <b>${fmt(goal - elapsed)}</b> short of your ${fmt(goal)} goal. Next time.`;
-    }
+    // Nothing to read here: whether you made it is the colour of the whole
+    // screen plus one emoji. The goal, the difference and the rest of the
+    // detail live in Stats, for when the glasses are back on.
+    ov.classList.remove('hit', 'miss', 'pb');
+    ov.classList.add(reached ? 'hit' : 'miss');
+    $('medal').textContent = reached ? (bonus >= 30 ? '🥶🔥' : '🏆') : '❄️';
     // personal-best / first-session flourish layers on top of the base result
     const pbEl = $('ovPB');
-    $('overlay').classList.remove('pb');
     if(flags.isPB){
-      pbEl.textContent = '🏅 New personal best!';
+      pbEl.textContent = '🏅 New best';
       pbEl.classList.remove('hide');
       $('medal').textContent = '🏅';
-      $('overlay').classList.add('pb');
+      ov.classList.add('pb');
       celebrate();
     } else if(flags.isFirst){
-      pbEl.textContent = '❄️ First one down!';
+      pbEl.textContent = '❄️ First one';
       pbEl.classList.remove('hide');
     } else {
       pbEl.classList.add('hide');
     }
-    $('overlay').classList.remove('hide');
+    ov.classList.remove('hide');
   }
 
   /* ============ users UI ============ */
@@ -1196,6 +1298,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.17', date: '2026-08-26 19:45', title: 'Built for showering without your glasses',
+      what: 'Both shower screens have been stripped back and scaled up. While the timer runs, the title, tagline, version line and every small caption disappear, leaving four things: a number that resizes itself to be as large as will fit inside the ring, three big phase bars under the dial filling left to right in blue → yellow → green, a wash of the phase colour across the whole screen, and one giant button. The screen after you stop is cut down hardest — it now shows only an emoji, your time as one huge number, and one big button, with the whole screen going green if you hit your goal, icy blue if you stopped short and gold for a personal best. The goal, the difference and the summary sentence are gone from it: they live in Stats, for when the glasses are back on. Words are replaced by symbols throughout — 🚿 get in, ✓ made it, ▶ START, ■ STOP — and the goal picker, presets and buttons on the home screen are all bigger.',
+      benefit: 'Nothing on either screen needs reading any more. Mid-shower you know your time and your phase from a blurry glance, and the moment you stop there is one number and one button instead of a screenful of detail to squint at.' },
     { v: 'v1.16', date: '2026-08-16 14:30', title: 'Longer 10-second lead-in',
       what: 'The get-ready lead-in is now 10 seconds instead of 3, giving you time to turn the shower to its coldest before timing starts. The ring empties as it counts down, with soft beeps only for the final 3 seconds and a “GO”. Tap the dial to skip it any time.',
       benefit: 'No rushing the tap — you can get the water properly cold and be in position before the clock begins.' },
