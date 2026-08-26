@@ -591,7 +591,7 @@
       <details class="acc">
         <summary>Backup &amp; test timer <span class="chev">›</span></summary>
         <div class="accbody">
-          <p>Under <b>Your data</b> you can <b>export</b> a backup file, <b>copy</b> it to the clipboard, or <b>import / restore</b> one — handy for keeping your history safe or moving it to a new phone.</p>
+          <p>Under <b>Your data</b> you can <b>export</b> a backup file, <b>copy</b> it to the clipboard, or <b>import / restore</b> one — handy for keeping your history safe or moving it to a new phone. A restore <b>shows its work</b>: it reports exactly how many profiles and sessions came back, and warns you if anything didn't make it (your backup file stays untouched, so you can just try again).</p>
           <p>Once you've built up some history, a slim <b>backup reminder</b> appears on the home screen if it's been over a <b>month</b> since your last backup. Tap <b>Back up</b> to jump to your data options, or <b>✕</b> to dismiss it for a week. Any export, copy or restore resets the reminder.</p>
           <p>The <b>30-second test timer</b> (also in Settings) runs a quick countdown so you can preview the beeps, chime and green finish without a full shower. Test runs are <b>never saved</b> to your stats.</p>
         </div>
@@ -650,14 +650,18 @@
 
   /* ============ user + data store (localStorage) ============ */
   const LS = localStorage;
+  // Safe write: a full disk or a locked-down browser can make setItem THROW.
+  // Nothing user-facing may break because a save failed — callers that care
+  // check the returned boolean, everything else degrades to "not remembered".
+  const lsSet = (k, v) => { try { LS.setItem(k, v); return true; } catch(e){ return false; } };
   const uid = () => 'u' + Math.random().toString(36).slice(2, 8);
   const readJSON = (k, d) => { try { return JSON.parse(LS.getItem(k)) ?? d; } catch(e){ return d; } };
   const loadUsers = () => readJSON('cst.users', []);
-  const saveUsers = u => LS.setItem('cst.users', JSON.stringify(u));
+  const saveUsers = u => lsSet('cst.users', JSON.stringify(u));
   const goalKey = id => 'cst.goal.' + id;
   const sessKey = id => 'cst.sessions.' + id;
   const loadSessions = id => readJSON(sessKey(id), []);
-  const saveSessions = (id, a) => LS.setItem(sessKey(id), JSON.stringify(a));
+  const saveSessions = (id, a) => lsSet(sessKey(id), JSON.stringify(a));
 
   let users = loadUsers();
   let activeId = LS.getItem('cst.active');
@@ -667,12 +671,12 @@
       const id = uid();
       users = [{ id, name: 'You' }];
       saveUsers(users);
-      activeId = id; LS.setItem('cst.active', id);
+      activeId = id; lsSet('cst.active', id);
       const old = LS.getItem('cst.goal');            // migrate old single-user goal
-      if(old) LS.setItem(goalKey(id), old);
+      if(old) lsSet(goalKey(id), old);
     }
     if(!activeId || !users.find(u => u.id === activeId)){
-      activeId = users[0].id; LS.setItem('cst.active', activeId);
+      activeId = users[0].id; lsSet('cst.active', activeId);
     }
   }
   const activeUser = () => users.find(u => u.id === activeId) || users[0];
@@ -680,7 +684,7 @@
 
   let goal = 180;
   function loadGoal(){ goal = parseInt(LS.getItem(goalKey(activeId)) || '180', 10); }
-  const saveGoal = () => LS.setItem(goalKey(activeId), goal);
+  const saveGoal = () => lsSet(goalKey(activeId), goal);
 
   /* ---------- formatting ---------- */
   const fmt = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
@@ -887,9 +891,12 @@
     const counts = !testMode && dur >= 3;
     const isFirst = counts && prior.length === 0;
     const isPB = counts && prior.length > 0 && dur > prevLongest;
-    saveSession(elapsed, reached);
+    const saved = saveSession(elapsed, reached);
     showSummary(elapsed, reached, { isPB, isFirst });
     resetToIdleUI();
+    // Even if the save failed the app must finish the session cleanly — the
+    // summary and idle screen come first, then one honest heads-up.
+    if(!saved) alert("This session couldn't be saved — the phone refused the write (storage may be full). Your existing history is unchanged.");
   }
   function startTest(){
     testMode = true;
@@ -912,11 +919,11 @@
     maybeShowBackupNudge();
   }
   function saveSession(elapsed, reached){
-    if(testMode) return;                         // test runs never touch stats
-    if(elapsed < 3) return;                      // ignore accidental taps
+    if(testMode) return true;                    // test runs never touch stats
+    if(elapsed < 3) return true;                 // ignore accidental taps
     const arr = loadSessions(activeId);
     arr.push({ t: startAt, goal, dur: Math.round(elapsed), reached, bonus: Math.max(0, Math.round(elapsed - goal)) });
-    saveSessions(activeId, arr);
+    return saveSessions(activeId, arr);          // false = the phone refused the write
   }
   function showSummary(elapsed, reached, flags = {}){
     const bonus = Math.max(0, elapsed - goal);
@@ -974,7 +981,7 @@
     });
   }
   function selectUser(id){
-    activeId = id; LS.setItem('cst.active', id);
+    activeId = id; lsSet('cst.active', id);
     loadGoal(); refreshChip(); renderIdle(); closeSheet();
   }
   function addUser(){
@@ -995,7 +1002,7 @@
     if(!confirm(`Delete “${u.name}” and their history? This can’t be undone.`)) return;
     users = users.filter(x => x.id !== id); saveUsers(users);
     LS.removeItem(goalKey(id)); LS.removeItem(sessKey(id));
-    if(activeId === id){ activeId = users[0].id; LS.setItem('cst.active', activeId); loadGoal(); refreshChip(); renderIdle(); }
+    if(activeId === id){ activeId = users[0].id; lsSet('cst.active', activeId); loadGoal(); refreshChip(); renderIdle(); }
     renderUserList();
   }
 
@@ -1188,7 +1195,7 @@
     const arr = loadSessions(activeId);
     arr.push({ t, goal: g, dur, reached: dur >= g, bonus: Math.max(0, dur - g) });
     arr.sort((a,b) => a.t - b.t);
-    saveSessions(activeId, arr);
+    if(!saveSessions(activeId, arr)){ alert("Couldn't save — the phone refused the write (storage may be full)."); return; }
     closeAddSess();
     renderStatsBody();
   }
@@ -1270,13 +1277,25 @@
       for(let i = LS.length - 1; i >= 0; i--){                 // clear existing cst.* keys
         const k = LS.key(i); if(k && k.startsWith('cst.')) LS.removeItem(k);
       }
-      keys.forEach(k => LS.setItem(k, data[k]));
+      let failed = 0;
+      keys.forEach(k => { if(!lsSet(k, data[k])) failed++; });
       // reload state from restored storage
       users = loadUsers(); activeId = LS.getItem('cst.active');
       initUsers(); loadGoal(); refreshChip(); renderIdle();
       stampBackup();                                  // they clearly have a backup file
       closeSettings();
-      alert('Backup restored. ✅');
+      // The restore proves itself: count what actually came back rather than
+      // just claiming success.
+      const nP = users.length;
+      const nS = users.reduce((n, u) => n + loadSessions(u.id).length, 0);
+      if(failed){
+        alert('Restore incomplete ⚠️ — the phone refused ' + failed + ' write' + (failed === 1 ? '' : 's') +
+              ' (storage may be full). Restored so far: ' + nP + (nP === 1 ? ' profile, ' : ' profiles, ') +
+              nS + (nS === 1 ? ' session.' : ' sessions.') + ' Your backup file is untouched — free up space and import it again.');
+      } else {
+        alert('Backup restored ✅\n' + nP + (nP === 1 ? ' profile' : ' profiles') + ' · ' +
+              nS + (nS === 1 ? ' session' : ' sessions'));
+      }
     };
     reader.readAsText(file);
   }
@@ -1284,7 +1303,7 @@
   /* ---- monthly backup reminder ---- */
   // Stamp "just backed up" whenever the user exports, copies or restores, and
   // nudge (once every 30 days) if there's real history worth protecting.
-  function stampBackup(){ LS.setItem('cst.lastBackup', String(Date.now())); maybeShowBackupNudge(); }
+  function stampBackup(){ lsSet('cst.lastBackup', String(Date.now())); maybeShowBackupNudge(); }
   function maybeShowBackupNudge(){
     const el = $('backupNudge'); if(!el) return;
     const now = Date.now();
@@ -1298,6 +1317,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.18', date: '2026-08-26 22:15', title: 'Storage hardening & a restore that proves itself',
+      what: 'Two safety improvements under the hood. Every save the app makes is now protected: if the phone ever refuses a write (for example with storage completely full), the app finishes cleanly and tells you plainly that the session couldn’t be saved, instead of freezing on the session screen. And restoring a backup now reports exactly what came back — how many profiles and how many sessions — and warns you honestly if any part of the restore didn’t make it, with your backup file left untouched so you can simply try again.',
+      benefit: 'The app can no longer get stuck at the moment you press Stop, and a restore is no longer an act of faith — it shows its work.' },
     { v: 'v1.17', date: '2026-08-26 19:45', title: 'Built for showering without your glasses',
       what: 'Both shower screens have been stripped back and scaled up. While the timer runs, the title, tagline, version line and every small caption disappear, leaving four things: a number that resizes itself to be as large as will fit inside the ring, three big phase bars under the dial filling left to right in blue → yellow → green, a wash of the phase colour across the whole screen, and one giant button. The screen after you stop is cut down hardest — it now shows only an emoji, your time as one huge number, and one big button, with the whole screen going green if you hit your goal, icy blue if you stopped short and gold for a personal best. The goal, the difference and the summary sentence are gone from it: they live in Stats, for when the glasses are back on. Words are replaced by symbols throughout — 🚿 get in, ✓ made it, ▶ START, ■ STOP — and the goal picker, presets and buttons on the home screen are all bigger.',
       benefit: 'Nothing on either screen needs reading any more. Mid-shower you know your time and your phase from a blurry glance, and the moment you stop there is one number and one button instead of a screenful of detail to squint at.' },
@@ -1399,9 +1421,9 @@
   $('exportBtn').onclick = exportData;
   $('copyBtn').onclick = e => copyData(e.currentTarget);
   $('backupNow').onclick = openSettings;
-  $('backupDismiss').onclick = () => { LS.setItem('cst.backupSnooze', String(Date.now())); maybeShowBackupNudge(); };
-  $('leadInToggle').onclick = () => { LS.setItem('cst.leadIn', leadInOn() ? '0' : '1'); syncToggles(); };
-  $('phaseCueToggle').onclick = () => { LS.setItem('cst.phaseCue', phaseCueOn() ? '0' : '1'); syncToggles(); };
+  $('backupDismiss').onclick = () => { lsSet('cst.backupSnooze', String(Date.now())); maybeShowBackupNudge(); };
+  $('leadInToggle').onclick = () => { lsSet('cst.leadIn', leadInOn() ? '0' : '1'); syncToggles(); };
+  $('phaseCueToggle').onclick = () => { lsSet('cst.phaseCue', phaseCueOn() ? '0' : '1'); syncToggles(); };
   document.querySelector('.dial').addEventListener('click', skipLeadIn);
   $('importBtn').onclick = () => $('importFile').click();
   $('importFile').addEventListener('change', e => {
