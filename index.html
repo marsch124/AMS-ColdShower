@@ -53,11 +53,24 @@
     -webkit-user-select:none; user-select:none;
     transition: background-color .18s ease;
   }
-  body.flash{ animation: flashbg .5s ease-out 3; }
+  /* Reaching the goal fires three sharp flashes, then settles into a slower,
+     softer pulse that KEEPS GOING until you press STOP — so if you weren't
+     looking at the phone at the exact second you hit your goal, the screen is
+     still waving at you when you glance over. The two animations hand off: the
+     pulse is delayed by exactly the length of the burst (3 × .5s), and neither
+     uses a fill-mode, so only one is painting at a time.
+     The pulse is deliberately slow (1.8s) and softer than the burst — this one
+     can run for minutes of bonus time, so it has to be a breath, not a strobe. */
+  body.flash{ animation: flashbg .5s ease-out 3,
+                         flashpulse 1.8s ease-in-out 1.5s infinite; }
   @keyframes flashbg{
     0%{ background-color:transparent; }
     30%{ background-color:rgba(44,224,122,.85); }
     100%{ background-color:transparent; }
+  }
+  @keyframes flashpulse{
+    0%,100%{ background-color:transparent; }
+    50%{ background-color:rgba(44,224,122,.55); }
   }
   /* persistent "you made it" green wash — fades in the instant the goal is
      reached and stays for the whole bonus count-up. Sits above the dark base
@@ -128,9 +141,10 @@
     #time.t5{ font-size:112px; }
     #time.t6{ font-size:95px; }
   }
-  /* symbol slot under the digits — 🚿 while you get in, ✓ once you've made it.
-     No words: nothing at label size is readable from inside a shower. */
-  #phaseLabel{ margin-top:6px; font-size:66px; line-height:1; font-weight:900; min-height:0; }
+  /* (v1.19: the symbol slot that used to sit under the digits — 🚿 while you got
+     in, ✓ once you'd made it — is gone. A symbol you have to identify is no
+     easier without glasses than a word: the number, the ring, the bars and the
+     colour of the screen already say it, so it was only clutter.) */
 
   /* goal picker */
   .goal{ display:flex; align-items:center; justify-content:center; gap:14px; margin-top:2px;}
@@ -165,6 +179,12 @@
   .btn:active{ transform:translateY(1px); }
   .btn.stop{ background:linear-gradient(180deg,#ff8f9c,#ff5a6e); color:#2a0006;
              box-shadow:0 8px 30px rgba(255,90,110,.3);}
+  /* Once the goal is in the bag the button stops meaning "abandon this" and
+     starts meaning "you're done, finish up" — so it drops the red and goes
+     bright green. Rides on body.done, which is added in reachGoal() and cleared
+     in start()/resetToIdleUI(), so it reverts to red by itself next session. */
+  body.done .btn.stop{ background:linear-gradient(180deg,#8af5bb,#2ce07a); color:#03210f;
+                       box-shadow:0 8px 34px rgba(44,224,122,.45);}
   .btn.ghost{ background:transparent; border:1px solid var(--line); color:var(--ink); box-shadow:none;
               height:52px; font-size:18px; font-weight:700;}
   .linkbtn{ background:none; border:none; color:var(--ice); font-size:16px; font-weight:600; padding:8px; }
@@ -199,12 +219,11 @@
             display:flex; flex-direction:column; }
   .center{ align-items:center; justify-content:center; gap:14px; padding:28px; text-align:center; }
   /* The finish screen is the one you read soaking wet, still with no glasses on.
-     Whole-screen verdict colour, huge number, one short symbol line, no prose. */
+     Whole-screen verdict colour, huge number, one button. No emoji, no prose,
+     no links — nothing that has to be identified before it means anything. */
   #overlay.center{ gap:18px; }
   #overlay .big{ font-size:clamp(72px, 27vw, 124px); font-weight:900; line-height:1;
                  font-variant-numeric:tabular-nums; text-shadow:0 3px 18px rgba(0,0,0,.55); }
-  #overlay .medal{ font-size:clamp(66px, 19vw, 92px); line-height:1; }
-  #overlay .linkbtn{ font-size:22px; font-weight:800; padding:12px; }
   #overlay .btn{ height:92px; font-size:32px; border-radius:24px; letter-spacing:.08em; }
 
   /* the verdict is the colour of the whole screen: green = made it, ice = short */
@@ -221,7 +240,9 @@
   #overlay.pb{ background:
       radial-gradient(90% 60% at 50% 32%, rgba(245,184,61,.22), transparent 62%),
       rgba(20,14,2,.94); }
-  #overlay.pb .medal{ animation:pbpop .6s cubic-bezier(.2,1.3,.4,1) both; }
+  /* the pop used to land on the medal; with that gone it moves to the badge so
+     a personal best still announces itself with a little movement */
+  #overlay.pb .pbbadge{ animation:pbpop .6s cubic-bezier(.2,1.3,.4,1) both; }
   @keyframes pbpop{ 0%{ transform:scale(.4); opacity:0; } 60%{ transform:scale(1.25); } 100%{ transform:scale(1); opacity:1; } }
   #overlay.pb .big{ color:#ffd45e; text-shadow:0 0 22px rgba(245,184,61,.35); }
   .pbmark{ font-size:14px; }
@@ -429,7 +450,6 @@
       </svg>
       <div class="readout">
         <div id="time">3:00</div>
-        <div id="phaseLabel"></div>
       </div>
     </div>
 
@@ -453,14 +473,14 @@
     <button class="btn" id="startBtn">▶ START</button>
   </footer>
 
-  <!-- session summary — glasses off and dripping wet, so: one symbol, one
-       number, one button. The verdict is the colour of the whole screen. -->
+  <!-- session summary — glasses off and dripping wet, so: one number and one
+       button, nothing else. The verdict is the colour of the whole screen.
+       (v1.19 cut the trophy/medal emoji and the "stats →" link: stats are for
+       when the glasses are back on, so they're reached from the home screen.) -->
   <div id="overlay" class="overlay center hide">
-    <div class="medal" id="medal">🏆</div>
     <div class="pbbadge hide" id="ovPB"></div>
     <div class="big" id="ovTime">0:00</div>
     <button class="btn" id="againBtn">DONE</button>
-    <button class="linkbtn" id="ovStats">stats →</button>
   </div>
 
   <!-- user picker sheet -->
@@ -550,8 +570,8 @@
         <summary>Getting started <span class="chev">›</span></summary>
         <div class="accbody">
           <p><b>Pick a goal</b> with the 3 / 6 / 9-minute presets, or nudge it ±1 minute with the − / + buttons.</p>
-          <p><b>Tap ▶ START</b> and a <b>10-second lead-in</b> counts you in, giving you time to set the water to cold and step in before timing begins. A big <b>🚿</b> shows while it counts. Tap the dial to skip it, or switch it off under <b>Settings → Timer cues</b>.</p>
-          <p>Let the ring count you down. Tap the big red <b>■ STOP</b> button anytime to end and save the session.</p>
+          <p><b>Tap ▶ START</b> and a <b>10-second lead-in</b> counts you in, giving you time to set the water to cold and step in before timing begins. Just the number counts down, nice and big. Tap the dial to skip it, or switch it off under <b>Settings → Timer cues</b>.</p>
+          <p>Let the ring count you down. Tap the big <b>■ STOP</b> button anytime to end and save the session — it's <b>red</b> while you're still short of your goal and turns <b>green</b> the moment you've made it.</p>
         </div>
       </details>
       <details class="acc">
@@ -562,10 +582,10 @@
           <p><b>1 · The number.</b> It resizes itself to be as large as will fit inside the ring — so <b>10</b> during the lead-in fills the dial, and <b>+10:00</b> in bonus time still fits. It glows in the colour of the phase you're in.</p>
           <p><b>2 · The three bars</b> under the dial — one per third of your goal — filling left to right in <b>blue → yellow → green</b>. Even if you can't read a single digit, how full the bars are tells you how far along you are.</p>
           <p><b>3 · The colour of the whole screen</b>, which takes on a wash of the phase colour, then turns fully <b>green</b> the instant you hit your goal.</p>
-          <p><b>4 · One giant button.</b> Nothing else is tappable, so you can't miss it or hit the wrong thing with wet hands.</p>
-          <p>Words are replaced by symbols throughout: <b>🚿</b> get in, <b>✓</b> you've made it, <b>▶</b> start, <b>■</b> stop.</p>
-          <p><b>And the screen after you stop</b> is now down to three things: <b>one emoji</b>, <b>one big number</b> (how long you lasted) and <b>one big button</b>. Whether you hit your goal is the <b>colour of the whole screen</b> — green if you made it, icy blue if you stopped short, gold for a personal best — so there's nothing to read at all while you're dripping.</p>
-          <p>Your goal, how far over or under you were, and everything else moved to <b>Stats</b>, for when your glasses are back on. Tap <b>stats →</b> at the bottom of that screen to go straight there.</p>
+          <p><b>4 · One giant button</b>, which is also a signal in itself: <b>red</b> means you haven't reached your goal yet, <b>green</b> means you have. Nothing else is tappable, so you can't miss it or hit the wrong thing with wet hands.</p>
+          <p><b>No symbols to decipher.</b> A little emoji is no easier to make out than a word when everything's blurred, so the shower screen doesn't use any — the get-in <b>🚿</b>, the goal-reached <b>✓</b> and the finish-screen trophy have all been removed. Only <b>▶</b> and <b>■</b> remain, sitting inside the one huge button where there's nothing to confuse them with.</p>
+          <p><b>And the screen after you stop</b> is down to two things: <b>one big number</b> (how long you lasted) and <b>one big button</b>. Whether you hit your goal is the <b>colour of the whole screen</b> — green if you made it, icy blue if you stopped short, gold for a personal best — so there's genuinely nothing to read while you're dripping.</p>
+          <p>Your goal, how far over or under you were, and everything else moved to <b>Stats</b>, for when your glasses are back on. Press <b>DONE</b> to get out of the finish screen, then open <b>Stats</b> with the chart button at the top of the home screen.</p>
         </div>
       </details>
       <details class="acc">
@@ -574,10 +594,11 @@
           <p>The timer runs through <b>three colour-coded phases</b> across equal thirds of your goal: <b>blue → yellow → green</b>. The ring, the digits, the three bars under the dial and a wash across the whole screen all carry that colour at once, so a blurry glance tells you how far you've come.</p>
           <p>The <b>three bars</b> under the dial are one per third. Each fills left to right as you move through it — a progress reading that needs no numbers at all.</p>
           <p>As you cross into the yellow and green thirds, a <b>soft rising chime</b> marks each boundary — so you can track your progress by ear without looking. Turn these <b>phase chimes</b> off under <b>Settings → Timer cues</b> if you prefer silence.</p>
-          <p>You'll hear soft <b>3-2-1 beeps</b> just before the finish, then a <b>chime and a big green screen flash</b> the instant you hit your goal.</p>
-          <p>When you reach your goal the <b>whole background turns green and stays green</b> for the rest of the session — so you can tell you've made it at a glance, even from across the shower with water running.</p>
+          <p>You'll hear soft <b>3-2-1 beeps</b> just before the finish, then a <b>chime and three big green flashes</b> the instant you hit your goal.</p>
+          <p><b>The flashing then keeps going</b> — settling into a slower, gentler green pulse that carries on until you press <b>■ STOP</b>. So if you happened to be facing away at the exact second you hit your goal, the screen is still waving at you when you next glance over; you can't miss it any more.</p>
+          <p>At the same time the <b>whole background turns green and stays green</b> for the rest of the session, and the big button <b>turns from red to green</b> — three separate ways of saying the same thing, none of which need your glasses.</p>
           <p>After the goal it flips to a <b>bonus count-up</b>, so you can push past your target and bank extra seconds.</p>
-          <p>Beat your longest-ever shower and the finish screen turns <b>gold</b> — a 🏅 medal, a short <b>“New best”</b> badge and a brighter chime. Every record-setting session is also flagged with a 🏅 in your history.</p>
+          <p>Beat your longest-ever shower and the finish screen turns <b>gold</b>, with a short <b>“New best”</b> badge and a brighter chime. Every record-setting session is also flagged with a 🏅 in your history.</p>
         </div>
       </details>
       <details class="acc">
@@ -771,7 +792,6 @@
   function renderIdle(){
     $('goalText').textContent = fmt(goal);
     setTime(fmt(goal));
-    $('phaseLabel').textContent = '';
     $('time').style.color = '';
     setRing(1, 'var(--ice)');
     document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', +p.dataset.s === goal));
@@ -795,13 +815,11 @@
         if(n !== lastLeadNum){ lastLeadNum = n; if(n <= 3) beep(); }
         setTime(String(n));
         $('time').style.color = 'var(--ice)';
-        $('phaseLabel').textContent = '🚿';         // symbol, not words: "get in"
         setRing((LEAD - t) / LEAD, 'var(--ice)');
       } else if(t < LEAD + 0.55){                   // brief "GO"
         if(lastLeadNum !== 0){ lastLeadNum = 0; goBeep(); }
         setTime('GO');
         $('time').style.color = 'var(--go)';
-        $('phaseLabel').textContent = '';
         setRing(1, 'var(--go)');
       } else {
         beginCountdown();
@@ -845,7 +863,6 @@
     // on it is the weakest thing on the display. White is the strongest.
     $('time').style.color = 'var(--ink)'; setRing(1, 'var(--go)');
     setSegs(1);                                     // all three bars full green
-    $('phaseLabel').textContent = '✓';              // one symbol, no words
     if(navigator.vibrate) navigator.vibrate([120,60,120,60,220]);
   }
 
@@ -926,21 +943,18 @@
     return saveSessions(activeId, arr);          // false = the phone refused the write
   }
   function showSummary(elapsed, reached, flags = {}){
-    const bonus = Math.max(0, elapsed - goal);
     const ov = $('overlay');
     $('ovTime').textContent = fmt(elapsed);
-    // Nothing to read here: whether you made it is the colour of the whole
-    // screen plus one emoji. The goal, the difference and the rest of the
-    // detail live in Stats, for when the glasses are back on.
+    // Nothing to read here at all: whether you made it is the colour of the
+    // whole screen. The goal, the difference and the rest of the detail live
+    // in Stats, for when the glasses are back on.
     ov.classList.remove('hit', 'miss', 'pb');
     ov.classList.add(reached ? 'hit' : 'miss');
-    $('medal').textContent = reached ? (bonus >= 30 ? '🥶🔥' : '🏆') : '❄️';
     // personal-best / first-session flourish layers on top of the base result
     const pbEl = $('ovPB');
     if(flags.isPB){
       pbEl.textContent = '🏅 New best';
       pbEl.classList.remove('hide');
-      $('medal').textContent = '🏅';
       ov.classList.add('pb');
       celebrate();
     } else if(flags.isFirst){
@@ -1317,6 +1331,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.19', date: '2026-08-27 19:53', title: 'A finish you can’t miss, and no more symbols to decipher',
+      what: 'Five changes to the shower screens, all aimed at the same thing. The green flash when you reach your goal no longer fires three times and stops — after the three sharp flashes it settles into a slower, gentler green pulse that keeps going until you press STOP, so if you were facing away at the exact second you made it, the screen is still waving at you when you glance over. The big button now turns from red to green the moment you reach your goal, so the button itself tells you where you stand. And three emoji have been removed: the shower symbol during the 10-second lead-in, the tick that appeared on reaching your goal, and the trophy above your time on the finish screen — a small picture is no easier to identify than a word when everything is blurred, so each was only clutter. The finish screen is now just your time and one button, and the “stats →” link at the bottom of it is gone too: Stats is for when your glasses are back on, so it is opened from the chart button on the home screen instead.',
+      benefit: 'You can’t miss the moment you hit your goal any more, even if you weren’t looking — and there is nothing left on either shower screen that has to be recognised before it means something. Colour and size do all the talking.' },
     { v: 'v1.18', date: '2026-08-26 22:15', title: 'Storage hardening & a restore that proves itself',
       what: 'Two safety improvements under the hood. Every save the app makes is now protected: if the phone ever refuses a write (for example with storage completely full), the app finishes cleanly and tells you plainly that the session couldn’t be saved, instead of freezing on the session screen. And restoring a backup now reports exactly what came back — how many profiles and how many sessions — and warns you honestly if any part of the restore didn’t make it, with your backup file left untouched so you can simply try again.',
       benefit: 'The app can no longer get stuck at the moment you press Stop, and a restore is no longer an act of faith — it shows its work.' },
@@ -1395,7 +1412,6 @@
   $('plus').onclick  = () => { goal = Math.min(MAX_GOAL, goal + STEP); saveGoal(); renderIdle(); };
   $('startBtn').onclick = start;
   $('againBtn').onclick = () => $('overlay').classList.add('hide');
-  $('ovStats').onclick = () => { $('overlay').classList.add('hide'); openStats(); };
 
   $('userChip').onclick = openSheet;
   $('sheetClose').onclick = closeSheet;
