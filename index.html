@@ -72,6 +72,21 @@
     0%,100%{ background-color:transparent; }
     50%{ background-color:rgba(44,224,122,.55); }
   }
+  /* Passing your longest-ever shower is rarer and bigger than hitting the goal,
+     so gold outranks green everywhere: the wash, the pulse and the button all
+     switch over the instant it happens. Same trick as the green — declared
+     AFTER the green rules so it simply wins, no JS bookkeeping. */
+  body.gold.flash{ animation: flashgold .5s ease-out 3,
+                              flashgoldpulse 1.8s ease-in-out 1.5s infinite; }
+  @keyframes flashgold{
+    0%{ background-color:transparent; }
+    30%{ background-color:rgba(245,184,61,.85); }
+    100%{ background-color:transparent; }
+  }
+  @keyframes flashgoldpulse{
+    0%,100%{ background-color:transparent; }
+    50%{ background-color:rgba(245,184,61,.5); }
+  }
   /* persistent "you made it" green wash — fades in the instant the goal is
      reached and stays for the whole bonus count-up. Sits above the dark base
      background but behind all the text (z-index:-1). */
@@ -83,6 +98,19 @@
     opacity:0; transition:opacity .55s ease;
   }
   body.done::after{ opacity:1; }
+  /* the gold "new best" wash — declared after the green one so it takes over */
+  body.gold::after{
+    opacity:1;
+    background:
+      radial-gradient(125% 85% at 50% -8%, #f5b83d, transparent 62%),
+      linear-gradient(180deg, #7a5205 0%, #2a1c00 72%);
+  }
+  html.gold{
+    background-color:#3d2a02;
+    background-image:
+      radial-gradient(125% 85% at 50% -8%, #c8912a, transparent 62%),
+      linear-gradient(180deg, #6b4805 0%, #241800 72%);
+  }
 
   /* ambient phase glow — the whole screen picks up the colour of the third
      you're in (blue → yellow → green), so a blurry glance across the shower is
@@ -92,7 +120,11 @@
     background:radial-gradient(130% 75% at 50% 0%, var(--ph, #3ea6ff), transparent 66%);
     opacity:.24;
   }
-  body.running.done::before{ opacity:0; }
+  /* once the screen has a verdict colour of its own — green for the goal, gold
+     for a new record — the phase glow steps out of the way. Gold is listed too
+     because a record can fall BEFORE the goal, with no green involved. */
+  body.running.done::before,
+  body.running.gold::before{ opacity:0; }
 
   /* top bar */
   .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
@@ -185,6 +217,19 @@
      in start()/resetToIdleUI(), so it reverts to red by itself next session. */
   body.done .btn.stop{ background:linear-gradient(180deg,#8af5bb,#2ce07a); color:#03210f;
                        box-shadow:0 8px 34px rgba(44,224,122,.45);}
+  /* past your longest-ever shower the button goes gold — outranks green */
+  body.gold .btn.stop{ background:linear-gradient(180deg,#ffe08a,#f5b83d); color:#3a2600;
+                       box-shadow:0 8px 34px rgba(245,184,61,.5);}
+  /* ---- hold to stop ----
+     Wet hands, a 92px button and a phone at chest height: one accidental brush
+     used to end the shower. Now the button has to be HELD, and it shows the
+     hold as a bar sweeping across itself — pure motion, nothing to read. */
+  .btn.stop{ position:relative; overflow:hidden; }
+  .btn.stop::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:0;
+    background:rgba(255,255,255,.55); pointer-events:none;
+  }
+  .btn.stop.holding::before{ width:100%; transition:width .9s linear; }
   .btn.ghost{ background:transparent; border:1px solid var(--line); color:var(--ink); box-shadow:none;
               height:52px; font-size:18px; font-weight:700;}
   .linkbtn{ background:none; border:none; color:var(--ice); font-size:16px; font-weight:600; padding:8px; }
@@ -200,6 +245,28 @@
   body.running .track,
   body.running .prog{ stroke-width:14; }
   body.running footer .btn{ height:92px; font-size:32px; border-radius:24px; letter-spacing:.08em; }
+
+  /* ---- "tap for sound" gate ----
+     iPhone refuses to let a web page make ANY sound until a finger touches it.
+     Launching from an Apple Shortcut never involves touching the page, so every
+     beep and the goal chime used to be dead for that whole shower. This layer
+     appears only on a Shortcut launch and any tap on it wakes the sound. It
+     deliberately does NOT cover the footer (see z-index below) so the STOP
+     button is always reachable, and it sits over the dial so the tap can't be
+     mistaken for the tap-to-skip-the-lead-in gesture. */
+  #audioGate{ position:fixed; inset:0; z-index:15; display:flex;
+              align-items:flex-end; justify-content:center; padding-bottom:22vh;
+              background:rgba(4,18,31,.35); -webkit-backdrop-filter:blur(1px); backdrop-filter:blur(1px); }
+  #audioGate span{ font-size:23px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+                   color:var(--ink); background:rgba(4,18,31,.7); border:1px solid var(--line);
+                   padding:16px 26px; border-radius:999px; animation:gatepulse 1.6s ease-in-out infinite; }
+  @keyframes gatepulse{ 0%,100%{ opacity:.65; } 50%{ opacity:1; } }
+  footer{ position:relative; z-index:16; }   /* STOP always sits above the gate */
+
+  /* home-screen standing line: streak + last shower. Lives in the header, so
+     body.running hides it with everything else the moment a session starts. */
+  .homestat{ display:block; margin:7px 0 0; font-size:14px; font-weight:700;
+             letter-spacing:.04em; color:var(--ice); font-variant-numeric:tabular-nums; }
 
   /* home-screen backup reminder (slim, dismissible) */
   .nudge{ display:flex; align-items:center; gap:10px; width:100%; max-width:420px;
@@ -232,6 +299,13 @@
       rgba(3,32,18,.95); }
   #overlay.hit .big{ color:var(--ink); }    /* white on the green screen reads hardest */
   #overlay.miss .big{ color:var(--ice); }
+  /* Stopping at 5:50 on a 6:00 goal used to look exactly like stopping at 0:30
+     — the same flat icy "no". Anything from 90% of the goal gets its own warm
+     amber instead, so the screen can say "so close" without a single word. */
+  #overlay.near{ background:
+      radial-gradient(115% 68% at 50% 24%, rgba(255,176,60,.26), transparent 64%),
+      rgba(38,22,4,.95); }
+  #overlay.near .big{ color:#ffc46b; text-shadow:0 3px 18px rgba(0,0,0,.55); }
 
   /* personal-best flourish */
   .pbbadge{ font-size:20px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:#3a2600;
@@ -246,6 +320,13 @@
   @keyframes pbpop{ 0%{ transform:scale(.4); opacity:0; } 60%{ transform:scale(1.25); } 100%{ transform:scale(1); opacity:1; } }
   #overlay.pb .big{ color:#ffd45e; text-shadow:0 0 22px rgba(245,184,61,.35); }
   .pbmark{ font-size:14px; }
+
+  /* recovered-session screen */
+  #recover .big{ font-size:clamp(64px, 24vw, 112px); font-weight:900; line-height:1;
+                 font-variant-numeric:tabular-nums; color:var(--ice); }
+  .rectitle{ font-size:19px; font-weight:800; letter-spacing:.04em; color:var(--ink); }
+  .recnote{ font-size:14px; line-height:1.5; color:rgba(234,247,255,.65); max-width:320px; }
+  #recover .btn{ max-width:340px; }
 
   /* user sheet */
   #sheet{ justify-content:flex-end; }
@@ -332,6 +413,13 @@
   .btn.ghost.ok{ border-color:var(--go); color:var(--go); }
   .setnote{ font-size:12px; color:rgba(234,247,255,.45); margin-top:10px; text-align:center; }
 
+  /* segmented choice inside a settings card (lead-in length) */
+  .choice{ display:flex; gap:8px; margin-top:14px; }
+  .choice button{ flex:1; padding:12px 4px; border-radius:12px; font-size:16px; font-weight:800;
+                  border:1px solid rgba(127,227,255,.25); background:rgba(127,227,255,.05);
+                  color:var(--ice); font-variant-numeric:tabular-nums; }
+  .choice button.active{ background:var(--ice); color:#04121f; border-color:var(--ice); }
+
   /* on/off toggle switch */
   .togg{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .togg + .togg{ margin-top:16px; }
@@ -417,6 +505,7 @@
   <header>
     <h1>Cold Shower</h1>
     <p class="sub" id="tagline">Set your goal &amp; brace yourself</p>
+    <span class="homestat hide" id="homeStat"></span>
     <span class="ver" id="appVer"></span>
   </header>
 
@@ -473,6 +562,19 @@
     <button class="btn" id="startBtn">▶ START</button>
   </footer>
 
+  <!-- shown only on an Apple Shortcut launch: one tap anywhere wakes the sound
+       that iPhone otherwise blocks for the whole session. Never covers STOP. -->
+  <div id="audioGate" class="hide"><span>Tap for sound</span></div>
+
+  <!-- after a crash: the session that was running when the app died -->
+  <div id="recover" class="overlay center hide">
+    <div class="rectitle">Unfinished shower</div>
+    <div class="big" id="recTime">0:00</div>
+    <div class="recnote" id="recNote"></div>
+    <button class="btn" id="recKeep">KEEP IT</button>
+    <button class="btn ghost" id="recDrop">Discard</button>
+  </div>
+
   <!-- session summary — glasses off and dripping wet, so: one number and one
        button, nothing else. The verdict is the colour of the whole screen.
        (v1.19 cut the trophy/medal emoji and the "stats →" link: stats are for
@@ -522,6 +624,7 @@
       </div>
       <button class="btn ghost mini2 full hide" id="addSessBtn" style="margin-bottom:10px;">+ Add a missed session</button>
       <div class="hist" id="hist"></div>
+      <button class="btn ghost mini2 full hide" id="histMore" style="margin-top:10px;">Show older</button>
     </div>
   </div>
 
@@ -552,17 +655,47 @@
         <button class="btn mini2 full" id="testBtn">Start 30-second test</button>
       </div>
 
-      <div class="seclabel">Timer cues</div>
+      <div class="seclabel">Before you start</div>
       <div class="setcard">
         <div class="togg">
-          <span>Get-ready 10-second lead-in</span>
+          <span>Get-ready lead-in</span>
           <button class="tsw" id="leadInToggle" role="switch" aria-checked="true" aria-label="Toggle get-ready lead-in"></button>
         </div>
+        <div class="choice" id="leadLen">
+          <button data-s="10">10 sec</button>
+          <button data-s="20">20 sec</button>
+          <button data-s="30">30 sec</button>
+        </div>
+        <p style="margin-top:16px;">The <b>lead-in</b> counts you in before timing starts, giving you time to set the water properly cold and step in — the ring empties as it counts, with soft beeps for the final 3 and a “GO”. Pick <b>10, 20 or 30 seconds</b> to suit how long your tap takes to run cold. Tap the dial to skip it any time.</p>
+      </div>
+
+      <div class="seclabel">Sounds</div>
+      <div class="setcard">
         <div class="togg">
           <span>Phase chimes</span>
           <button class="tsw" id="phaseCueToggle" role="switch" aria-checked="true" aria-label="Toggle phase chimes"></button>
         </div>
-        <p style="margin-top:16px;">The <b>lead-in</b> gives you a <b>10-second</b> countdown to set the water to cold before timing starts — the ring empties as it counts, with soft beeps for the final 3. Tap the dial to skip it. <b>Phase chimes</b> play a soft, rising tone as you cross into the yellow and green thirds, so you can track your progress by ear. Preview both with the test timer above.</p>
+        <div class="togg">
+          <span>Keep chiming after the goal</span>
+          <button class="tsw" id="goalRepeatToggle" role="switch" aria-checked="true" aria-label="Toggle repeating goal chime"></button>
+        </div>
+        <div class="togg">
+          <span>Play over the ring switch</span>
+          <button class="tsw" id="mediaChToggle" role="switch" aria-checked="true" aria-label="Toggle playing through the media channel"></button>
+        </div>
+        <p style="margin-top:16px;"><b>Phase chimes</b> mark each boundary as you cross into the yellow and green thirds, so you can track progress by ear. <b>Keep chiming</b> repeats the goal chime every 20 seconds through the bonus count-up, so the sound keeps telling you what the flashing green screen is telling you.</p>
+        <p><b>Play over the ring switch</b> routes every cue through the music channel instead of the ringer, so you still hear them with the phone on silent — which is the only way they work for most mornings. The trade-off: while a session is running this can <b>pause music or a podcast</b> you had playing. Turn it off if you'd rather keep your audio and watch the screen instead.</p>
+        <div class="setnote">All cues are pitched and layered to carry over running water. Preview them with the test timer above.</div>
+      </div>
+
+      <div class="seclabel">While it runs</div>
+      <div class="setcard">
+        <div class="togg">
+          <span>Hold the button to stop</span>
+          <button class="tsw" id="holdStopToggle" role="switch" aria-checked="true" aria-label="Toggle hold to stop"></button>
+        </div>
+        <p style="margin-top:16px;">With this on, <b>■ STOP</b> has to be held for about a second — a white bar sweeps across the button as you hold, and letting go early cancels it. Wet hands and a phone at chest height make a single accidental tap far too easy, and that tap used to end your shower.</p>
+        <p>Whatever happens, the app <b>stops itself</b> after 15 minutes of bonus time and saves the session. If you step out and forget the phone, it can no longer count up all morning holding the screen awake and then log a nonsense time.</p>
       </div>
 
       <div class="seclabel">How this works</div>
@@ -570,8 +703,10 @@
         <summary>Getting started <span class="chev">›</span></summary>
         <div class="accbody">
           <p><b>Pick a goal</b> with the 3 / 6 / 9-minute presets, or nudge it ±1 minute with the − / + buttons.</p>
-          <p><b>Tap ▶ START</b> and a <b>10-second lead-in</b> counts you in, giving you time to set the water to cold and step in before timing begins. Just the number counts down, nice and big. Tap the dial to skip it, or switch it off under <b>Settings → Timer cues</b>.</p>
-          <p>Let the ring count you down. Tap the big <b>■ STOP</b> button anytime to end and save the session — it's <b>red</b> while you're still short of your goal and turns <b>green</b> the moment you've made it.</p>
+          <p><b>Tap ▶ START</b> and a <b>lead-in</b> counts you in, giving you time to set the water to cold and step in before timing begins. Just the number counts down, nice and big. Set it to <b>10, 20 or 30 seconds</b> under <b>Settings → Before you start</b>, tap the dial to skip it, or switch it off entirely.</p>
+          <p>Let the ring count you down. <b>Hold</b> the big <b>■ STOP</b> button for about a second to end and save the session — a white bar sweeps across it as you hold, and letting go early cancels. Holding rather than tapping means a wet hand brushing the phone can't end your shower; if you'd rather have a plain tap, turn it off under <b>Settings → While it runs</b>.</p>
+          <p>The button is a signal in itself: <b>red</b> while you're short of your goal, <b>green</b> the moment you've made it, and <b>gold</b> if you go past your longest-ever shower.</p>
+          <p>Above the goal picker, one line tells you <b>how many days running</b> you've kept it up and <b>how long your last shower was</b>. It disappears with everything else once a session starts.</p>
         </div>
       </details>
       <details class="acc">
@@ -582,9 +717,11 @@
           <p><b>1 · The number.</b> It resizes itself to be as large as will fit inside the ring — so <b>10</b> during the lead-in fills the dial, and <b>+10:00</b> in bonus time still fits. It glows in the colour of the phase you're in.</p>
           <p><b>2 · The three bars</b> under the dial — one per third of your goal — filling left to right in <b>blue → yellow → green</b>. Even if you can't read a single digit, how full the bars are tells you how far along you are.</p>
           <p><b>3 · The colour of the whole screen</b>, which takes on a wash of the phase colour, then turns fully <b>green</b> the instant you hit your goal.</p>
-          <p><b>4 · One giant button</b>, which is also a signal in itself: <b>red</b> means you haven't reached your goal yet, <b>green</b> means you have. Nothing else is tappable, so you can't miss it or hit the wrong thing with wet hands.</p>
+          <p><b>4 · One giant button</b>, which is also a signal in itself: <b>red</b> means you haven't reached your goal yet, <b>green</b> means you have, <b>gold</b> means you're past your longest-ever shower. Nothing else is tappable, so you can't miss it or hit the wrong thing with wet hands — and it has to be <b>held</b>, so a stray splash or a knuckle can't end the session either.</p>
+          <p><b>Gold beats green.</b> The moment you go past your record the entire screen — wash, ring, digits and button — switches from green to <b>gold</b>, with a brighter flourish. You don't have to wait until you've stopped to find out you've done it.</p>
           <p><b>No symbols to decipher.</b> A little emoji is no easier to make out than a word when everything's blurred, so the shower screen doesn't use any — the get-in <b>🚿</b>, the goal-reached <b>✓</b> and the finish-screen trophy have all been removed. Only <b>▶</b> and <b>■</b> remain, sitting inside the one huge button where there's nothing to confuse them with.</p>
-          <p><b>And the screen after you stop</b> is down to two things: <b>one big number</b> (how long you lasted) and <b>one big button</b>. Whether you hit your goal is the <b>colour of the whole screen</b> — green if you made it, icy blue if you stopped short, gold for a personal best — so there's genuinely nothing to read while you're dripping.</p>
+          <p><b>And the screen after you stop</b> is down to two things: <b>one big number</b> (how long you lasted) and <b>one big button</b>. How it went is the <b>colour of the whole screen</b> — <b>green</b> if you made your goal, <b>amber</b> if you came close (within a tenth of it), <b>icy blue</b> if you stopped well short, <b>gold</b> for a personal best — so there's genuinely nothing to read while you're dripping.</p>
+          <p>The amber matters: stopping at 5:50 on a 6-minute goal is not the same story as stopping at 30 seconds, and it no longer looks like it.</p>
           <p>Your goal, how far over or under you were, and everything else moved to <b>Stats</b>, for when your glasses are back on. Press <b>DONE</b> to get out of the finish screen, then open <b>Stats</b> with the chart button at the top of the home screen.</p>
         </div>
       </details>
@@ -593,12 +730,14 @@
         <div class="accbody">
           <p>The timer runs through <b>three colour-coded phases</b> across equal thirds of your goal: <b>blue → yellow → green</b>. The ring, the digits, the three bars under the dial and a wash across the whole screen all carry that colour at once, so a blurry glance tells you how far you've come.</p>
           <p>The <b>three bars</b> under the dial are one per third. Each fills left to right as you move through it — a progress reading that needs no numbers at all.</p>
-          <p>As you cross into the yellow and green thirds, a <b>soft rising chime</b> marks each boundary — so you can track your progress by ear without looking. Turn these <b>phase chimes</b> off under <b>Settings → Timer cues</b> if you prefer silence.</p>
+          <p>As you cross into the yellow and green thirds, a <b>soft rising chime</b> marks each boundary — so you can track your progress by ear without looking. Turn these <b>phase chimes</b> off under <b>Settings → Sounds</b> if you prefer silence.</p>
+          <p><b>Every cue is built to survive running water.</b> A single pure tone is the easiest thing in the world for a shower to swallow, so each beep and chime is a stack of several tones an octave and a twelfth apart, pitched where the ear hears best. They also play over the <b>ring switch</b>, so you still hear them with the phone on silent — see <b>Settings → Sounds</b>, where you can turn that off if you'd rather it never paused your music.</p>
           <p>You'll hear soft <b>3-2-1 beeps</b> just before the finish, then a <b>chime and three big green flashes</b> the instant you hit your goal.</p>
           <p><b>The flashing then keeps going</b> — settling into a slower, gentler green pulse that carries on until you press <b>■ STOP</b>. So if you happened to be facing away at the exact second you hit your goal, the screen is still waving at you when you next glance over; you can't miss it any more.</p>
           <p>At the same time the <b>whole background turns green and stays green</b> for the rest of the session, and the big button <b>turns from red to green</b> — three separate ways of saying the same thing, none of which need your glasses.</p>
-          <p>After the goal it flips to a <b>bonus count-up</b>, so you can push past your target and bank extra seconds.</p>
-          <p>Beat your longest-ever shower and the finish screen turns <b>gold</b>, with a short <b>“New best”</b> badge and a brighter chime. Every record-setting session is also flagged with a 🏅 in your history.</p>
+          <p><b>And the chime keeps going too.</b> A softer version of it repeats every 20 seconds through the bonus count-up, so the sound is saying the same thing the pulsing green screen is saying, for as long as you're in there. Turn it off under <b>Settings → Sounds</b>.</p>
+          <p>After the goal it flips to a <b>bonus count-up</b>, so you can push past your target and bank extra seconds. Go past your <b>longest-ever shower</b> and the whole screen turns <b>gold</b> at that exact moment, with a brighter flourish — so the bonus time has something to aim at rather than just climbing. The finish screen then keeps the gold, with a short <b>“New best”</b> badge, and the session is flagged with a 🏅 in your history.</p>
+          <p><b>It stops itself eventually.</b> After <b>15 minutes</b> of bonus time the app ends the session and saves it. If you step out and leave the phone running, it can no longer count up all morning holding the screen awake and then record a nonsense time.</p>
         </div>
       </details>
       <details class="acc">
@@ -607,6 +746,7 @@
           <p><b>Add a profile</b> per person from the name chip at the top left. Each keeps their own goal and their own history.</p>
           <p>The <b>stats screen</b> shows sessions, total time, your longest shower, goal-hit rate, day-streak and average — plus recent-session, calendar and weekly charts. Record-setting sessions are marked with a 🏅 in the recent list.</p>
           <p>Tap <b>Adjust</b> under “Recent sessions” to fix your history: <b>add a shower you forgot to time</b> (set its date, length and goal) or <b>delete one that was logged by mistake</b>.</p>
+          <p>The list starts with your <b>20 most recent</b> showers and a <b>Show older</b> button underneath brings back 20 more each time, all the way to your first. Older sessions can be adjusted and deleted just like recent ones.</p>
         </div>
       </details>
       <details class="acc">
@@ -615,6 +755,7 @@
           <p>Under <b>Your data</b> you can <b>export</b> a backup file, <b>copy</b> it to the clipboard, or <b>import / restore</b> one — handy for keeping your history safe or moving it to a new phone. A restore <b>shows its work</b>: it reports exactly how many profiles and sessions came back, and warns you if anything didn't make it (your backup file stays untouched, so you can just try again).</p>
           <p>Once you've built up some history, a slim <b>backup reminder</b> appears on the home screen if it's been over a <b>month</b> since your last backup. Tap <b>Back up</b> to jump to your data options, or <b>✕</b> to dismiss it for a week. Any export, copy or restore resets the reminder.</p>
           <p>The <b>30-second test timer</b> (also in Settings) runs a quick countdown so you can preview the beeps, chime and green finish without a full shower. Test runs are <b>never saved</b> to your stats.</p>
+          <p><b>If the app closes mid-shower</b> — the phone reboots, iPhone reclaims memory, or it gets swiped away by mistake — the session is no longer lost. While a session runs the app quietly notes it down every couple of seconds, and next time you open it you're shown how far you'd got and asked whether to <b>keep it</b> or <b>discard it</b>. At worst you lose the last second or two, instead of the whole shower.</p>
         </div>
       </details>
       <details class="acc">
@@ -622,6 +763,7 @@
         <div class="accbody">
           <p><b>Add to Home Screen</b> from Safari's Share menu and it runs full-screen and fully <b>offline</b>, like a real app.</p>
           <p>It keeps the <b>screen awake</b> during a session. You can also auto-start it from an <b>Apple Shortcut</b> — open it with <b>?goal=6</b> to preset minutes and <b>?start</b> to begin immediately.</p>
+          <p><b>“Tap for sound”.</b> When a Shortcut opens the app, no finger has touched the page — and iPhone blocks a web app from making <i>any</i> sound until it has been touched. That used to leave the entire shower silent: no lead-in beeps, no phase chimes, no goal chime. So a Shortcut launch now shows a <b>Tap for sound</b> prompt over the dial. One tap anywhere on it wakes the sound for the whole session, and unlike tapping the dial itself, it will <b>not</b> skip your lead-in. The timer starts immediately either way — the tap only concerns the sound — and the <b>■ STOP</b> button stays reachable underneath it.</p>
         </div>
       </details>
 
@@ -663,11 +805,18 @@
   const PRESETS = [180, 360, 540];                   // 3, 6, 9 minutes
   const STEP = 60, MIN_GOAL = 60, MAX_GOAL = 1800;   // ±1 min, up to 30 min
 
+  const AUTOSTOP_BONUS = 15 * 60;                    // safety net: end a forgotten session
+  const PB_NONE = Infinity;                          // "no record to beat this run"
+
   let phase = 'idle';           // idle | ready | countdown | bonus
   let startAt = 0, readyStart = 0;
   let raf = null, lastBeepSec = null, lastLeadNum = null, lastCueIdx = 0, lastPhIdx = -1;
-  let audio = null, wakeLock = null;
+  let audio = null, master = null, wakeLock = null;
   let testMode = false;         // 30-second test run — not saved to stats
+  let pbTarget = PB_NONE;       // seconds to beat for a personal best this run
+  let pbHit = false;            // already gone gold this run
+  let goalRepeatT = null;       // repeating goal chime through the bonus
+  let liveT = null;             // "a session is running" heartbeat
 
   /* ============ user + data store (localStorage) ============ */
   const LS = localStorage;
@@ -724,12 +873,40 @@
   const prefOn = (k, def) => (LS.getItem(k) ?? (def ? '1' : '0')) === '1';
   const leadInOn = () => prefOn('cst.leadIn', true);
   const phaseCueOn = () => prefOn('cst.phaseCue', true);
+  const goalRepeatOn = () => prefOn('cst.goalRepeat', true);
+  const mediaChOn = () => prefOn('cst.mediaCh', true);
+  const holdStopOn = () => prefOn('cst.holdStop', true);
+  const LEAD_CHOICES = [10, 20, 30];
+  function leadSecs(){
+    const n = parseInt(LS.getItem('cst.leadSecs') || '10', 10);
+    return LEAD_CHOICES.includes(n) ? n : 10;
+  }
   const setToggle = (el, on) => { if(el) el.setAttribute('aria-checked', on ? 'true' : 'false'); };
-  function syncToggles(){ setToggle($('leadInToggle'), leadInOn()); setToggle($('phaseCueToggle'), phaseCueOn()); }
+  function syncToggles(){
+    setToggle($('leadInToggle'), leadInOn());
+    setToggle($('phaseCueToggle'), phaseCueOn());
+    setToggle($('goalRepeatToggle'), goalRepeatOn());
+    setToggle($('mediaChToggle'), mediaChOn());
+    setToggle($('holdStopToggle'), holdStopOn());
+    const n = leadSecs();
+    document.querySelectorAll('#leadLen button').forEach(b => b.classList.toggle('active', +b.dataset.s === n));
+  }
 
   /* ---------- sound ---------- */
   function ensureAudio(){
-    if(!audio){ const AC = window.AudioContext || window.webkitAudioContext; audio = new AC(); }
+    if(!audio){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      audio = new AC();
+      // One shared output stage. Every cue is a STACK of partials now (see
+      // bell()), which is what lets it cut through the broadband hiss of a
+      // shower — but stacking three oscillators also stacks their amplitude.
+      // The compressor holds the peaks so the cues can be genuinely loud
+      // without clipping into a rasp.
+      master = audio.createDynamicsCompressor();
+      master.threshold.value = -14; master.knee.value = 12;
+      master.ratio.value = 8; master.attack.value = 0.003; master.release.value = 0.25;
+      master.connect(audio.destination);
+    }
     if(audio.state === 'suspended') audio.resume();
   }
   function tone(freq, when, dur, gain, type){
@@ -739,32 +916,130 @@
     g.gain.setValueAtTime(0, t0);
     g.gain.linearRampToValueAtTime(gain, t0 + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(g).connect(audio.destination);
+    osc.connect(g).connect(master || audio.destination);
     osc.start(t0); osc.stop(t0 + dur + 0.02);
   }
-  const beep = () => { if(audio) tone(760, 0, 0.12, 0.25, 'sine'); };
-  const goBeep = () => { if(audio) tone(988, 0, 0.20, 0.28, 'sine'); };   // brighter "go!"
-  function phaseTone(idx){                          // soft, rising cue at ⅓ and ⅔
+  /* A single sine is the WORST shape to put against running water — the noise
+     is broadband and simply swallows one thin frequency. A bell is the
+     fundamental plus its octave and twelfth: several partials spread across the
+     band where the ear is most sensitive, so some of it always gets through. */
+  function bell(freq, when, dur, gain){
     if(!audio) return;
-    tone(idx === 1 ? 523.25 : 659.25, 0, 0.35, 0.16, 'sine');
+    tone(freq,     when, dur,        gain,       'triangle');
+    tone(freq * 2, when, dur * 0.70, gain * 0.55, 'sine');
+    tone(freq * 3, when, dur * 0.45, gain * 0.30, 'sine');
   }
-  function chime(){
-    if(!audio) return;
-    tone(523.25,0,0.5,0.3); tone(659.25,0.12,0.5,0.3);
-    tone(783.99,0.24,0.7,0.34); tone(1046.5,0.36,0.8,0.28);
+  const beep = () => bell(880, 0, 0.16, 0.34);
+  const goBeep = () => bell(1046.5, 0, 0.26, 0.40);            // brighter "go!"
+  function phaseTone(idx){                          // soft, rising cue at ⅓ and ⅔
+    bell(idx === 1 ? 659.25 : 880, 0, 0.38, 0.22);
+  }
+  function chime(soft){                             // the goal
+    const g = soft ? 0.22 : 0.38;
+    bell(659.25, 0,    0.45, g);
+    bell(880,    0.13, 0.45, g);
+    bell(1046.5, 0.26, 0.62, g * 1.1);
+    if(!soft) bell(1318.5, 0.39, 0.85, g * 0.9);
   }
   function celebrate(){                              // brighter sparkle for a personal best
-    if(!audio) return;
-    tone(659.25,0,0.4,0.26); tone(880,0.10,0.4,0.26);
-    tone(1046.5,0.20,0.5,0.30); tone(1318.5,0.32,0.6,0.26);
+    bell(880,    0,    0.36, 0.32);
+    bell(1174.7, 0.10, 0.36, 0.32);
+    bell(1396.9, 0.20, 0.46, 0.36);
+    bell(1760,   0.32, 0.70, 0.30);
   }
+
+  /* ---- the ring switch ----
+     iPhone silences a web page's sound when the ring switch is on silent — and
+     a bathroom at 6am is exactly where the phone IS on silent, so the cues were
+     inaudible no matter how loud they got. Keeping a silent looping clip
+     playing puts the page on the MEDIA channel instead, which the ring switch
+     doesn't touch. Cost: it can interrupt music, so it only runs while a
+     session is running, and it's a setting. */
+  let keeper = null, keeperURL = null;
+  function silentClipURL(){
+    if(keeperURL) return keeperURL;
+    const sr = 8000, n = 800;                       // 0.1s of 16-bit silence
+    const buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    const wr = (o, s) => { for(let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    wr(0, 'RIFF');  v.setUint32(4, 36 + n * 2, true);  wr(8, 'WAVEfmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+    v.setUint16(32, 2, true);  v.setUint16(34, 16, true);
+    wr(36, 'data'); v.setUint32(40, n * 2, true);
+    keeperURL = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+    return keeperURL;
+  }
+  function claimMediaChannel(){
+    if(!mediaChOn()) return;
+    try{
+      if(!keeper){
+        keeper = new Audio(silentClipURL());
+        keeper.loop = true;
+        keeper.setAttribute('playsinline', '');
+      }
+      const p = keeper.play();
+      if(p && p.catch) p.catch(() => {});
+    }catch(e){}
+  }
+  function releaseMediaChannel(){ try{ keeper && keeper.pause(); }catch(e){} }
 
   /* ---------- wake lock ---------- */
   async function keepAwake(){ try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
   function releaseAwake(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; }
   document.addEventListener('visibilitychange', () => {
     if(document.visibilityState === 'visible' && phase !== 'idle') keepAwake();
+    if(document.visibilityState === 'hidden') liveWrite();   // most likely moment to be killed
   });
+  window.addEventListener('pagehide', liveWrite);
+
+  /* ---------- crash recovery ----------
+     Nothing used to be written down until STOP, so if iOS reclaimed the app,
+     the phone rebooted or it got swiped away mid-shower, the whole session
+     vanished — no time, no entry, no streak. A heartbeat every 2 seconds means
+     the worst case is losing the last couple of seconds instead of everything. */
+  const LIVE_KEY = 'cst.live';
+  function liveWrite(){
+    if(testMode || (phase !== 'countdown' && phase !== 'bonus')) return;
+    lsSet(LIVE_KEY, JSON.stringify({ u: activeId, startAt, goal, at: Date.now() }));
+  }
+  function liveClear(){
+    clearInterval(liveT); liveT = null;
+    try{ LS.removeItem(LIVE_KEY); }catch(e){}
+  }
+  function liveStart(){
+    clearInterval(liveT);
+    liveWrite();
+    liveT = setInterval(liveWrite, 2000);
+  }
+  // Offer back whatever was running, then hand control on. `next` runs once
+  // the question is answered (or immediately when there's nothing to ask), so
+  // a ?start launch can wait for the answer instead of overwriting it.
+  function checkRecover(next){
+    const done = () => { liveClear(); next && next(); };
+    const live = readJSON(LIVE_KEY, null);
+    if(!live || !live.startAt || !live.at || !live.goal) return done();
+    const dur = Math.round((live.at - live.startAt) / 1000);
+    const age = Date.now() - live.at;
+    // sanity: long enough to be real, recent enough to remember, not absurd
+    if(dur < 10 || dur > 3 * 3600 || age > 12 * 3600 * 1000) return done();
+    const who = users.find(u => u.id === live.u);
+    if(!who) return done();
+    $('recTime').textContent = fmt(dur);
+    $('recNote').textContent = 'The app closed while this was running' +
+      (who.id === activeId ? '' : ' for ' + who.name) +
+      '. It stopped counting at ' + fmt(dur) + ' — keep it in your history?';
+    $('recover').classList.remove('hide');
+    const finish = () => { $('recover').classList.add('hide'); done(); };
+    $('recKeep').onclick = () => {
+      const arr = loadSessions(live.u);
+      arr.push({ t: live.startAt, goal: live.goal, dur,
+                 reached: dur >= live.goal, bonus: Math.max(0, dur - live.goal) });
+      arr.sort((a, b) => a.t - b.t);
+      if(!saveSessions(live.u, arr)) alert("That session couldn't be saved — the phone refused the write.");
+      finish(); renderIdle();
+    };
+    $('recDrop').onclick = finish;
+  }
 
   /* ---------- timer rendering ---------- */
   function setRing(frac, color){
@@ -795,6 +1070,21 @@
     $('time').style.color = '';
     setRing(1, 'var(--ice)');
     document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', +p.dataset.s === goal));
+    renderHomeStat();
+  }
+  /* One line saying where you stand, on the one screen where your glasses are
+     still on. Lives in <header>, so body.running hides it with everything else. */
+  function renderHomeStat(){
+    const el = $('homeStat'); if(!el) return;
+    const s = loadSessions(activeId);
+    if(!s.length){ el.classList.add('hide'); el.textContent = ''; return; }
+    const streak = computeStreak(s);
+    const last = s[s.length - 1];
+    const bits = [];
+    if(streak) bits.push(streak + (streak === 1 ? ' day' : ' days') + ' running');
+    bits.push('last ' + fmt(last.dur));
+    el.textContent = bits.join('  ·  ');
+    el.classList.remove('hide');
   }
   function buildPresets(){
     const wrap = $('presets'); wrap.innerHTML = '';
@@ -806,11 +1096,11 @@
     });
   }
 
-  const LEAD = 10;                                  // get-ready seconds (time to set the water to min)
   function tick(){
     if(phase === 'ready'){
+      const LEAD = leadSecs();                      // 10, 20 or 30 — Settings
       const t = (Date.now() - readyStart) / 1000;
-      if(t < LEAD){                                 // 10 … 1, ring emptying; soft beeps only for the last 3
+      if(t < LEAD){                                 // counting down, ring emptying; soft beeps only for the last 3
         const n = Math.ceil(LEAD - t);
         if(n !== lastLeadNum){ lastLeadNum = n; if(n <= 3) beep(); }
         setTime(String(n));
@@ -828,6 +1118,11 @@
       return;
     }
     const elapsed = (Date.now() - startAt) / 1000;
+    // Passing your longest-ever shower can happen either side of the goal, so
+    // it's checked on elapsed time rather than inside a phase branch. Rounded
+    // the same way stop() rounds the saved duration, so the screen going gold
+    // and the finish screen's "New best" badge can never disagree.
+    if(!pbHit && Math.round(elapsed) > pbTarget) hitPB();
     if(phase === 'countdown'){
       const remaining = goal - elapsed;
       const rc = Math.ceil(remaining);
@@ -842,14 +1137,20 @@
         // whole-screen glow follows the phase, so the colour is unmissable
         if(idx !== lastPhIdx){ lastPhIdx = idx; document.body.style.setProperty('--ph', PHASE_COLORS[idx]); }
         setTime(fmt(remaining));
-        $('time').style.color = col;
-        setRing(remaining/goal, col);
+        // once you're past your record the screen is gold and stays gold —
+        // don't let the per-frame phase repaint pull it back to blue/yellow
+        $('time').style.color = pbHit ? 'var(--ink)' : col;
+        setRing(remaining/goal, pbHit ? '#f5b83d' : col);
         setSegs(frac);
       }
     }
     if(phase === 'bonus'){
+      // Safety net: the screen is held awake and the clock never ends by
+      // itself, so a session you walked away from used to run until the
+      // battery died and then log a nonsense duration. Stop and save instead.
+      if(elapsed - goal >= AUTOSTOP_BONUS){ stop(); return; }
       setTime('+' + fmt(elapsed - goal));
-      setRing(1, 'var(--go)');
+      setRing(1, pbHit ? '#f5b83d' : 'var(--go)');
     }
     raf = requestAnimationFrame(tick);
   }
@@ -863,13 +1164,40 @@
     // on it is the weakest thing on the display. White is the strongest.
     $('time').style.color = 'var(--ink)'; setRing(1, 'var(--go)');
     setSegs(1);                                     // all three bars full green
+    // v1.19 made the flashing carry on until STOP so the goal can't be missed;
+    // the chime still fired exactly once. The eyes got the fix and the ears
+    // didn't — so a softer version of it now repeats through the bonus time.
+    clearInterval(goalRepeatT);
+    if(goalRepeatOn()){
+      goalRepeatT = setInterval(() => {
+        if(phase === 'bonus') chime(true); else clearInterval(goalRepeatT);
+      }, 20000);
+    }
     if(navigator.vibrate) navigator.vibrate([120,60,120,60,220]);
+  }
+  /* Beating your longest-ever shower is the rarer, bigger thing, so it takes
+     the screen over from the green: gold wash, gold ring, gold button, and the
+     celebration sound moved to the moment it actually happens rather than
+     waiting for the finish screen. Pure colour — nothing new to read. */
+  function hitPB(){
+    pbHit = true;
+    document.body.classList.add('gold');
+    document.documentElement.classList.add('gold');
+    document.body.classList.remove('flash'); void document.body.offsetWidth;
+    document.body.classList.add('flash');
+    $('time').style.color = 'var(--ink)';
+    celebrate();
   }
 
   /* ---------- controls ---------- */
   function start(){
-    ensureAudio(); keepAwake();
+    ensureAudio(); claimMediaChannel(); keepAwake();
     lastBeepSec = null; lastCueIdx = 0; lastPhIdx = -1;
+    // what it takes to go gold this run — your longest ever, or nothing to
+    // beat on a first session (and never during a test run)
+    const prior = testMode ? [] : loadSessions(activeId);
+    pbTarget = prior.length ? prior.reduce((a, x) => Math.max(a, x.dur), 0) : PB_NONE;
+    pbHit = false;
     $('picker').classList.add('hide');
     $('topbar').classList.add('hide');
     $('backupNudge').classList.add('hide');
@@ -877,9 +1205,9 @@
     document.body.classList.add('running');
     $('segbar').classList.remove('hide');
     segPct[0] = segPct[1] = segPct[2] = -1; setSegs(0);
-    const b = $('startBtn'); b.textContent = '■ STOP'; b.classList.add('stop'); b.onclick = stop;
-    document.body.classList.remove('flash', 'done');
-    document.documentElement.classList.remove('done');
+    const b = $('startBtn'); b.textContent = '■ STOP'; b.classList.add('stop');
+    document.body.classList.remove('flash', 'done', 'gold');
+    document.documentElement.classList.remove('done', 'gold');
     if(leadInOn()){
       phase = 'ready'; readyStart = Date.now(); lastLeadNum = null;
       $('tagline').textContent = 'Get set…';
@@ -891,6 +1219,7 @@
   function beginCountdown(){
     phase = 'countdown'; startAt = Date.now(); lastBeepSec = null; lastCueIdx = 0;
     $('tagline').textContent = 'Breathe slow. You’ve got this.';
+    liveStart();                                     // from here on, a crash can't erase it
   }
   function skipLeadIn(){                             // tap the dial to skip the lead-in
     if(phase !== 'ready') return;
@@ -898,6 +1227,7 @@
   }
   function stop(){
     cancelAnimationFrame(raf); raf = null; releaseAwake();
+    holdCancel();
     if(phase === 'ready'){ resetToIdleUI(); return; }   // aborted before timing began
     const elapsed = (Date.now() - startAt) / 1000;
     const reached = elapsed >= goal;
@@ -923,15 +1253,20 @@
   }
   function resetToIdleUI(){
     phase = 'idle';
+    liveClear();                                     // the session is accounted for
+    clearInterval(goalRepeatT); goalRepeatT = null;
+    releaseMediaChannel(); holdCancel();
+    pbTarget = PB_NONE; pbHit = false;
+    $('audioGate').classList.add('hide');
     if(testMode){ testMode = false; loadGoal(); }   // restore the real goal
-    document.body.classList.remove('flash', 'done', 'running');
+    document.body.classList.remove('flash', 'done', 'running', 'gold');
     document.body.style.removeProperty('--ph');
-    document.documentElement.classList.remove('done');
+    document.documentElement.classList.remove('done', 'gold');
     $('segbar').classList.add('hide');
     $('picker').classList.remove('hide');
     $('topbar').classList.remove('hide');
     $('tagline').textContent = 'Set your goal & brace yourself';
-    const b = $('startBtn'); b.textContent = '▶ START'; b.classList.remove('stop'); b.onclick = start;
+    const b = $('startBtn'); b.textContent = '▶ START'; b.classList.remove('stop');
     renderIdle();
     maybeShowBackupNudge();
   }
@@ -948,8 +1283,10 @@
     // Nothing to read here at all: whether you made it is the colour of the
     // whole screen. The goal, the difference and the rest of the detail live
     // in Stats, for when the glasses are back on.
-    ov.classList.remove('hit', 'miss', 'pb');
-    ov.classList.add(reached ? 'hit' : 'miss');
+    ov.classList.remove('hit', 'miss', 'near', 'pb');
+    // three verdicts, not two: 5:50 out of 6:00 is not the same story as 0:30,
+    // and the colour of the screen is the only thing saying which it was.
+    ov.classList.add(reached ? 'hit' : (elapsed >= goal * 0.9 ? 'near' : 'miss'));
     // personal-best / first-session flourish layers on top of the base result
     const pbEl = $('ovPB');
     if(flags.isPB){
@@ -1135,9 +1472,17 @@
     });
     return set;
   }
+  // How many rows are on show. It used to be a hard 20 with no way past it, so
+  // everything older was invisible AND out of reach of the delete button.
+  let histLimit = 20;
+  const HIST_PAGE = 20;
   function renderHistory(s){
     const list = $('hist');
-    const recent = s.slice(-20).reverse();
+    const more = $('histMore');
+    const hidden = Math.max(0, s.length - histLimit);
+    more.classList.toggle('hide', hidden === 0);
+    more.textContent = 'Show older (' + hidden + ' more)';
+    const recent = s.slice(-histLimit).reverse();
     if(!recent.length){ list.innerHTML = `<div class="empty">Your finished showers will appear here.</div>`; return; }
     const pbs = pbSet(s);
     list.innerHTML = recent.map(x => {
@@ -1180,6 +1525,7 @@
   }
   function openStats(){
     adjustMode = false;
+    histLimit = HIST_PAGE;
     renderStatsBody();
     $('stats').classList.remove('hide');
   }
@@ -1219,7 +1565,9 @@
     const data = {};
     for(let i = 0; i < LS.length; i++){
       const k = LS.key(i);
-      if(k && k.startsWith('cst.')) data[k] = LS.getItem(k);
+      // cst.live is a transient "a shower is running right now" marker — putting
+      // it in a backup would make a restore offer to recover a stale session
+      if(k && k.startsWith('cst.') && k !== 'cst.live') data[k] = LS.getItem(k);
     }
     return data;
   }
@@ -1331,6 +1679,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.20', date: '2026-09-01 18:30', title: 'Cues you can actually hear, and a shower that can’t be lost',
+      what: 'Ten changes. <b>Sound:</b> cues now play over the ring switch, so you hear them with the phone on silent — the setting can be turned off if you’d rather not have music paused. Every beep and chime was rebuilt as a layered bell instead of a single thin tone, which is what lets it carry over running water, and the goal chime now repeats gently every 20 seconds through the bonus time instead of playing once. Starting from an Apple Shortcut used to leave the whole shower silent, because iPhone blocks sound until the screen is touched; it now asks for that one tap. <b>Safety:</b> if the app is closed or crashes mid-shower, the session is no longer lost — it’s offered back next time you open it. The button has to be <b>held</b> for a second to stop, so a wet hand can’t end things by accident. And it stops itself after 15 minutes of bonus time rather than counting up all morning. <b>Reading it:</b> beat your longest-ever shower and the whole screen turns <b>gold</b> the moment it happens, not just afterwards. Stopping close to your goal now shows a warm <b>amber</b> screen instead of the same flat blue as stopping straight away. The home screen carries one line with your streak and your last time. <b>Also:</b> the lead-in can be set to 10, 20 or 30 seconds, and Stats can now show more than the last 20 showers.',
+      benefit: 'The two things that could genuinely cost you — not hearing the goal, and losing a whole shower to a crash — are both closed. And nothing can end a session by accident any more: not a wet finger, not a forgotten phone.' },
     { v: 'v1.19', date: '2026-08-27 19:53', title: 'A finish you can’t miss, and no more symbols to decipher',
       what: 'Five changes to the shower screens, all aimed at the same thing. The green flash when you reach your goal no longer fires three times and stops — after the three sharp flashes it settles into a slower, gentler green pulse that keeps going until you press STOP, so if you were facing away at the exact second you made it, the screen is still waving at you when you glance over. The big button now turns from red to green the moment you reach your goal, so the button itself tells you where you stand. And three emoji have been removed: the shower symbol during the 10-second lead-in, the tick that appeared on reaching your goal, and the trophy above your time on the finish screen — a small picture is no easier to identify than a word when everything is blurred, so each was only clutter. The finish screen is now just your time and one button, and the “stats →” link at the bottom of it is gone too: Stats is for when your glasses are back on, so it is opened from the chart button on the home screen instead.',
       benefit: 'You can’t miss the moment you hit your goal any more, even if you weren’t looking — and there is nothing left on either shower screen that has to be recognised before it means something. Colour and size do all the talking.' },
@@ -1407,10 +1758,47 @@
   function openSettings(){ renderVersionLog(); syncToggles(); $('settings').classList.remove('hide'); }
   function closeSettings(){ $('settings').classList.add('hide'); }
 
+  /* ---------- hold to stop ----------
+     Only while a session is running, and only if the setting's on. The bar
+     sweeping across the button is the whole feedback — no text, no timer. */
+  const HOLD_MS = 900;
+  let holdT = null, holdDone = false;
+  function holdCancel(){
+    clearTimeout(holdT); holdT = null;
+    $('startBtn').classList.remove('holding');
+  }
+  function holdBegin(){
+    holdDone = false;                                // a fresh press: nothing to swallow
+    if(phase === 'idle' || !holdStopOn()) return;
+    holdCancel();
+    $('startBtn').classList.add('holding');
+    holdT = setTimeout(() => { holdDone = true; holdCancel(); stop(); }, HOLD_MS);
+  }
+  // One handler for the one button, because what a tap means depends on where
+  // we are. Critically, lifting the finger after a COMPLETED hold still fires a
+  // click — by then we're back on the idle screen, where a click means "start",
+  // so without this guard holding to stop would instantly start a new session.
+  function btnClick(){
+    if(holdDone){ holdDone = false; return; }
+    if(phase === 'idle') start();
+    else if(!holdStopOn()) stop();
+  }
+
   /* ============ wire up ============ */
   $('minus').onclick = () => { goal = Math.max(MIN_GOAL, goal - STEP); saveGoal(); renderIdle(); };
   $('plus').onclick  = () => { goal = Math.min(MAX_GOAL, goal + STEP); saveGoal(); renderIdle(); };
-  $('startBtn').onclick = start;
+  $('startBtn').onclick = btnClick;
+  $('startBtn').addEventListener('pointerdown', holdBegin);
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+    $('startBtn').addEventListener(ev, holdCancel));
+
+  // The gate exists purely to collect one touch, which is all iPhone needs to
+  // unblock sound. It never skips the lead-in — that's the bug it fixes.
+  $('audioGate').addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation();
+    ensureAudio(); claimMediaChannel();
+    $('audioGate').classList.add('hide');
+  });
   $('againBtn').onclick = () => $('overlay').classList.add('hide');
 
   $('userChip').onclick = openSheet;
@@ -1440,6 +1828,19 @@
   $('backupDismiss').onclick = () => { lsSet('cst.backupSnooze', String(Date.now())); maybeShowBackupNudge(); };
   $('leadInToggle').onclick = () => { lsSet('cst.leadIn', leadInOn() ? '0' : '1'); syncToggles(); };
   $('phaseCueToggle').onclick = () => { lsSet('cst.phaseCue', phaseCueOn() ? '0' : '1'); syncToggles(); };
+  $('goalRepeatToggle').onclick = () => { lsSet('cst.goalRepeat', goalRepeatOn() ? '0' : '1'); syncToggles(); };
+  $('holdStopToggle').onclick = () => { lsSet('cst.holdStop', holdStopOn() ? '0' : '1'); syncToggles(); };
+  $('mediaChToggle').onclick = () => {
+    const turningOff = mediaChOn();
+    lsSet('cst.mediaCh', turningOff ? '0' : '1');
+    if(turningOff) releaseMediaChannel();
+    syncToggles();
+  };
+  $('leadLen').addEventListener('click', e => {
+    const b = e.target.closest('button[data-s]'); if(!b) return;
+    lsSet('cst.leadSecs', b.dataset.s); syncToggles();
+  });
+  $('histMore').onclick = () => { histLimit += HIST_PAGE; renderHistory(loadSessions(activeId)); };
   document.querySelector('.dial').addEventListener('click', skipLeadIn);
   $('importBtn').onclick = () => $('importFile').click();
   $('importFile').addEventListener('change', e => {
@@ -1474,7 +1875,17 @@
   }
   renderIdle();
   maybeShowBackupNudge();
-  if(params.has('start') || params.has('go') || params.has('autostart')) start();
+
+  // A session interrupted by a crash is offered back FIRST — an auto-start
+  // would otherwise overwrite the record of it with its own heartbeat.
+  const autoStart = params.has('start') || params.has('go') || params.has('autostart');
+  checkRecover(() => {
+    if(!autoStart) return;
+    start();
+    // Launched by a Shortcut, so no finger has touched the page and iPhone is
+    // blocking every sound. Ask for the one tap that unblocks it.
+    if(!audio || audio.state !== 'running') $('audioGate').classList.remove('hide');
+  });
 
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js?v=' + VERSIONLOG[0].v).catch(()=>{});
 })();
