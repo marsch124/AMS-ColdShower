@@ -261,7 +261,20 @@
                    color:var(--ink); background:rgba(4,18,31,.7); border:1px solid var(--line);
                    padding:16px 26px; border-radius:999px; animation:gatepulse 1.6s ease-in-out infinite; }
   @keyframes gatepulse{ 0%,100%{ opacity:.65; } 50%{ opacity:1; } }
-  footer{ position:relative; z-index:16; }   /* STOP always sits above the gate */
+  footer{ position:relative; z-index:16;     /* STOP always sits above the gate */
+          margin-top:12px; }                 /* daylight: the button must never touch the presets */
+
+  /* Short screens — an SE, or any iPhone with Display Zoom on — have far less
+     room than the numbers suggest. Trim the dial and the picker rather than
+     let the START button ride up into the 3:00 / 6:00 / 9:00 pills. */
+  @media (max-height: 740px){
+    .dial{ width:min(84vw, 380px); }
+    .goal{ gap:10px; }
+    .step{ width:54px; height:54px; font-size:30px; }
+    .goalval .g{ font-size:40px; }
+    .presets{ margin-top:10px; }
+    .pill{ padding:10px 18px; font-size:19px; }
+  }
 
   /* home-screen standing line: streak + last shower. Lives in the header, so
      body.running hides it with everything else the moment a session starts. */
@@ -408,7 +421,7 @@
   .setcard + .setcard{ margin-top:10px; }
   .setcard p{ margin:0; font-size:14px; line-height:1.5; color:rgba(234,247,255,.72); }
   .setcard p + p{ margin-top:10px; }
-  .setcard .full{ width:100%; height:52px; margin-top:14px; }
+  .setcard .full, .accbody .full{ width:100%; height:52px; margin-top:14px; }
   .btn.mini2{ height:46px; font-size:16px; border-radius:14px; }
   .btn.ghost.ok{ border-color:var(--go); color:var(--go); }
   .setnote{ font-size:12px; color:rgba(234,247,255,.45); margin-top:10px; text-align:center; }
@@ -637,17 +650,6 @@
     </div>
     <div class="statsbody">
 
-      <div class="seclabel">Your data</div>
-      <div class="setcard">
-        <p>Everything lives on this device only — no account, no cloud. Export a
-          backup file you can keep safe or move to another phone.</p>
-        <button class="btn mini2 full" id="exportBtn">Export my data</button>
-        <button class="btn ghost mini2 full" id="copyBtn" style="margin-top:10px;">Copy backup to clipboard</button>
-        <button class="btn ghost mini2 full" id="importBtn" style="margin-top:10px;">Import / restore…</button>
-        <input type="file" id="importFile" accept="application/json,.json" class="hide" />
-        <div class="setnote">Export includes every profile, their goals and full history.</div>
-      </div>
-
       <div class="seclabel">Test timer</div>
       <div class="setcard">
         <p>Run a quick <b>30-second</b> countdown to preview the beeps, chime, green finish and
@@ -706,7 +708,7 @@
           <p><b>Tap ▶ START</b> and a <b>lead-in</b> counts you in, giving you time to set the water to cold and step in before timing begins. Just the number counts down, nice and big. Set it to <b>10, 20 or 30 seconds</b> under <b>Settings → Before you start</b>, tap the dial to skip it, or switch it off entirely.</p>
           <p>Let the ring count you down. <b>Hold</b> the big <b>■ STOP</b> button for about a second to end and save the session — a white bar sweeps across it as you hold, and letting go early cancels. Holding rather than tapping means a wet hand brushing the phone can't end your shower; if you'd rather have a plain tap, turn it off under <b>Settings → While it runs</b>.</p>
           <p>The button is a signal in itself: <b>red</b> while you're short of your goal, <b>green</b> the moment you've made it, and <b>gold</b> if you go past your longest-ever shower.</p>
-          <p>Above the goal picker, one line tells you <b>how many days running</b> you've kept it up and <b>how long your last shower was</b>. It disappears with everything else once a session starts.</p>
+          <p>Under the title, one line tells you <b>how many days running</b> you've kept it up and <b>how long your last shower was</b>. It takes the place of the “set your goal” tagline rather than adding a line to the screen — so the START button keeps its distance from the presets. Before your first shower the tagline shows instead, and the line disappears with everything else once a session starts.</p>
         </div>
       </details>
       <details class="acc">
@@ -752,7 +754,7 @@
       <details class="acc">
         <summary>Backup &amp; test timer <span class="chev">›</span></summary>
         <div class="accbody">
-          <p>Under <b>Your data</b> you can <b>export</b> a backup file, <b>copy</b> it to the clipboard, or <b>import / restore</b> one — handy for keeping your history safe or moving it to a new phone. A restore <b>shows its work</b>: it reports exactly how many profiles and sessions came back, and warns you if anything didn't make it (your backup file stays untouched, so you can just try again).</p>
+          <p>At the very bottom of Settings, under <b>Your data &amp; history → Backup &amp; restore</b>, you can <b>export</b> a backup file, <b>copy</b> it to the clipboard, or <b>import / restore</b> one — handy for keeping your history safe or moving it to a new phone. A restore <b>shows its work</b>: it reports exactly how many profiles and sessions came back, and warns you if anything didn't make it (your backup file stays untouched, so you can just try again).</p>
           <p>Once you've built up some history, a slim <b>backup reminder</b> appears on the home screen if it's been over a <b>month</b> since your last backup. Tap <b>Back up</b> to jump to your data options, or <b>✕</b> to dismiss it for a week. Any export, copy or restore resets the reminder.</p>
           <p>The <b>30-second test timer</b> (also in Settings) runs a quick countdown so you can preview the beeps, chime and green finish without a full shower. Test runs are <b>never saved</b> to your stats.</p>
           <p><b>If the app closes mid-shower</b> — the phone reboots, iPhone reclaims memory, or it gets swiped away by mistake — the session is no longer lost. While a session runs the app quietly notes it down every couple of seconds, and next time you open it you're shown how far you'd got and asked whether to <b>keep it</b> or <b>discard it</b>. At worst you lose the last second or two, instead of the whole shower.</p>
@@ -767,8 +769,25 @@
         </div>
       </details>
 
-      <div class="seclabel">Version log</div>
-      <div class="vlog" id="vlog"></div>
+      <div class="seclabel">Your data &amp; history</div>
+      <details class="acc">
+        <summary>Backup &amp; restore <span class="chev">›</span></summary>
+        <div class="accbody">
+          <p>Everything lives on this device only — no account, no cloud. Export a
+            backup file you can keep safe or move to another phone.</p>
+          <button class="btn mini2 full" id="exportBtn">Export my data</button>
+          <button class="btn ghost mini2 full" id="copyBtn" style="margin-top:10px;">Copy backup to clipboard</button>
+          <button class="btn ghost mini2 full" id="importBtn" style="margin-top:10px;">Import / restore…</button>
+          <input type="file" id="importFile" accept="application/json,.json" class="hide" />
+          <div class="setnote">Export includes every profile, their goals and full history.</div>
+        </div>
+      </details>
+      <details class="acc">
+        <summary>Version log <span class="chev">›</span></summary>
+        <div class="accbody">
+          <div class="vlog" id="vlog"></div>
+        </div>
+      </details>
 
     </div>
   </div>
@@ -1075,9 +1094,10 @@
   /* One line saying where you stand, on the one screen where your glasses are
      still on. Lives in <header>, so body.running hides it with everything else. */
   function renderHomeStat(){
-    const el = $('homeStat'); if(!el) return;
+    const el = $('homeStat'), sub = $('tagline'); if(!el) return;
     const s = loadSessions(activeId);
-    if(!s.length){ el.classList.add('hide'); el.textContent = ''; return; }
+    // Nothing to report yet: the tagline keeps its slot.
+    if(!s.length){ el.classList.add('hide'); el.textContent = ''; sub.classList.remove('hide'); return; }
     const streak = computeStreak(s);
     const last = s[s.length - 1];
     const bits = [];
@@ -1085,6 +1105,10 @@
     bits.push('last ' + fmt(last.dur));
     el.textContent = bits.join('  ·  ');
     el.classList.remove('hide');
+    // ...otherwise it REPLACES the tagline rather than stacking below it. Real
+    // information beats decoration, and the header stays one line shorter —
+    // which is what stopped START riding up into the presets.
+    sub.classList.add('hide');
   }
   function buildPresets(){
     const wrap = $('presets'); wrap.innerHTML = '';
@@ -1679,6 +1703,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.21', date: '2026-09-01 20:05', title: 'Room to breathe, and a tidier Settings',
+      what: 'The <b>START button was riding up into the 3:00 / 6:00 / 9:00 buttons</b> on shorter screens — including any iPhone with Display Zoom switched on. The streak line added in v1.20 was the culprit: it added a fourth line to the top of the home screen and squeezed everything below it. That line now <b>takes the place of the “set your goal” tagline</b> instead of stacking under it, so it costs no height at all — and the button is now guaranteed a gap above it, with the dial and picker shrinking automatically on small screens. <b>Settings has been tidied:</b> the <b>version log</b> and the <b>backup</b> section are now folded away behind headings you tap to open, exactly like the “How this works” guides, and both have moved to the bottom under <b>Your data &amp; history</b>. The switches you actually change are at the top.',
+      benefit: 'You can’t hit the wrong button by accident on the home screen any more, and Settings opens as a short list instead of a wall of text you have to scroll past.' },
     { v: 'v1.20', date: '2026-09-01 18:30', title: 'Cues you can actually hear, and a shower that can’t be lost',
       what: 'Ten changes. <b>Sound:</b> cues now play over the ring switch, so you hear them with the phone on silent — the setting can be turned off if you’d rather not have music paused. Every beep and chime was rebuilt as a layered bell instead of a single thin tone, which is what lets it carry over running water, and the goal chime now repeats gently every 20 seconds through the bonus time instead of playing once. Starting from an Apple Shortcut used to leave the whole shower silent, because iPhone blocks sound until the screen is touched; it now asks for that one tap. <b>Safety:</b> if the app is closed or crashes mid-shower, the session is no longer lost — it’s offered back next time you open it. The button has to be <b>held</b> for a second to stop, so a wet hand can’t end things by accident. And it stops itself after 15 minutes of bonus time rather than counting up all morning. <b>Reading it:</b> beat your longest-ever shower and the whole screen turns <b>gold</b> the moment it happens, not just afterwards. Stopping close to your goal now shows a warm <b>amber</b> screen instead of the same flat blue as stopping straight away. The home screen carries one line with your streak and your last time. <b>Also:</b> the lead-in can be set to 10, 20 or 30 seconds, and Stats can now show more than the last 20 showers.',
       benefit: 'The two things that could genuinely cost you — not hearing the goal, and losing a whole shower to a crash — are both closed. And nothing can end a session by accident any more: not a wet finger, not a forgotten phone.' },
