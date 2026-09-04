@@ -1,5 +1,10 @@
 /* Cold Shower Timer — offline service worker */
-const CACHE = 'cold-shower-v23';
+/* Named after the app version itself: index.html registers this file as
+   service-worker.js?v=<app version>, and that query rides along on this
+   script's own URL (the leading "v" of v1.22 is trimmed). One number to bump,
+   and the store on the device can never drift from the version in Settings. */
+const APP_V = (new URL(self.location.href).searchParams.get('v') || 'dev').replace(/^v/, '');
+const CACHE = 'cold-shower-v' + APP_V;
 const ASSETS = [
   './',
   './index.html',
