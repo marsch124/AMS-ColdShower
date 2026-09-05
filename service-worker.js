@@ -4,7 +4,8 @@
    script's own URL (the leading "v" of v1.22 is trimmed). One number to bump,
    and the store on the device can never drift from the version in Settings. */
 const APP_V = (new URL(self.location.href).searchParams.get('v') || 'dev').replace(/^v/, '');
-const CACHE = 'cold-shower-v' + APP_V;
+const PREFIX = 'cold-shower-v';
+const CACHE = PREFIX + APP_V;
 const ASSETS = [
   './',
   './index.html',
@@ -24,7 +25,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
