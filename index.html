@@ -685,7 +685,7 @@
           <span>Play over the ring switch</span>
           <button class="tsw" id="mediaChToggle" role="switch" aria-checked="true" aria-label="Toggle playing through the media channel"></button>
         </div>
-        <p style="margin-top:16px;"><b>Minute beeps</b> count the minutes out loud: one beep at 1:00, two at 2:00, three at 3:00 and so on. Count them and you know exactly how long you've been in — eyes shut, back to the phone, no glasses. They're lower and slower than the sharp 3-2-1 beeps before the finish, so the two can't be confused, and they stop at your goal. <b>Keep chiming</b> repeats the goal chime every 20 seconds through the bonus count-up, so the sound keeps telling you what the flashing green screen is telling you.</p>
+        <p style="margin-top:16px;"><b>Minute beeps</b> count the minutes out loud: one beep at 1:00, two at 2:00, three at 3:00 and so on. Count them and you know exactly how long you've been in — eyes shut, back to the phone, no glasses. They ring on a warmer, rounder note than the sharp 3-2-1 beeps before the finish, so the two can't be confused, and they stop at your goal. <b>Keep chiming</b> repeats the goal chime every 20 seconds through the bonus count-up, so the sound keeps telling you what the flashing green screen is telling you.</p>
         <p><b>Play over the ring switch</b> routes every cue through the music channel instead of the ringer, so you still hear them with the phone on silent — which is the only way they work for most mornings. The trade-off: while a session is running this can <b>pause music or a podcast</b> you had playing. Turn it off if you'd rather keep your audio and watch the screen instead.</p>
         <div class="setnote">All cues are pitched and layered to carry over running water. Preview them with the test timer above.</div>
       </div>
@@ -732,7 +732,7 @@
         <div class="accbody">
           <p>The timer runs through <b>three colour-coded phases</b> across equal thirds of your goal: <b>blue → yellow → green</b>. The ring, the digits, the three bars under the dial and a wash across the whole screen all carry that colour at once, so a blurry glance tells you how far you've come.</p>
           <p>The <b>three bars</b> under the dial are one per third. Each fills left to right as you move through it — a progress reading that needs no numbers at all.</p>
-          <p><b>The minutes are counted out loud.</b> One beep when a minute has gone, two beeps at two minutes, three at three, and so on — so you always know how long you've been in without opening your eyes or turning round. The beeps are low and unhurried, quite unlike the sharp 3-2-1 beeps just before the finish, so you can't mistake one for the other. They stop the moment you reach your goal, where the goal chime takes over. Turn <b>minute beeps</b> off under <b>Settings → Sounds</b> if you prefer silence.</p>
+          <p><b>The minutes are counted out loud.</b> One beep when a minute has gone, two beeps at two minutes, three at three, and so on — so you always know how long you've been in without opening your eyes or turning round. The beeps are long and unhurried, on a warmer note than the short, sharp 3-2-1 beeps just before the finish, so you can't mistake one for the other. They stop the moment you reach your goal, where the goal chime takes over. Turn <b>minute beeps</b> off under <b>Settings → Sounds</b> if you prefer silence.</p>
           <p><b>Every cue is built to survive running water.</b> A single pure tone is the easiest thing in the world for a shower to swallow, so each beep and chime is a stack of several tones an octave and a twelfth apart, pitched where the ear hears best. They also play over the <b>ring switch</b>, so you still hear them with the phone on silent — see <b>Settings → Sounds</b>, where you can turn that off if you'd rather it never paused your music.</p>
           <p>You'll hear soft <b>3-2-1 beeps</b> just before the finish, then a <b>chime and three big green flashes</b> the instant you hit your goal.</p>
           <p><b>The flashing then keeps going</b> — settling into a slower, gentler green pulse that carries on until you press <b>■ STOP</b>. So if you happened to be facing away at the exact second you hit your goal, the screen is still waving at you when you next glance over; you can't miss it any more.</p>
@@ -953,12 +953,19 @@
   const beep = () => bell(880, 0, 0.16, 0.34);
   const goBeep = () => bell(1046.5, 0, 0.26, 0.40);            // brighter "go!"
   /* Minute markers: count the beeps and you know how long you've been in, with
-     your eyes shut and your back to the phone. Deliberately LOWER, rounder and
-     more widely spaced than the 3-2-1 beeps (bell 880, 0.16s) — those mean
-     "nearly there", and the two must never be mistaken for each other. */
-  const MARK_GAP = 0.42;
+     your eyes shut and your back to the phone.
+     Still a different note from the 3-2-1 beeps (bell 880, 0.16s) — those mean
+     "nearly there", and a run of three minute-beeps must never be heard as the
+     countdown — but F5 rather than the C5 these started life at. C5 sat below
+     the band the ear is most sensitive in, so the shower simply swallowed it;
+     F5 keeps a clear major third from the countdown beeps while putting this
+     bell's harmonics (1397 / 2095 Hz) right where they carry. Louder and
+     longer to match, with the spacing opened up so the tails don't run
+     together. Distinctness now comes from pitch and rhythm, not from being
+     quieter — being quieter was the whole problem. */
+  const MARK_GAP = 0.58;
   function minuteMark(n){
-    for(let i = 0; i < n; i++) bell(523.25, i * MARK_GAP, 0.30, 0.30);
+    for(let i = 0; i < n; i++) bell(698.46, i * MARK_GAP, 0.48, 0.44);
   }
   function chime(soft){                             // the goal
     const g = soft ? 0.22 : 0.38;
@@ -1718,6 +1725,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.25', date: '2026-09-07 08:35', title: 'Minute beeps you can actually hear',
+      what: 'The minute beeps introduced in v1.24 were pitched too far down to survive running water. They were deliberately made lower than the 3-2-1 beeps so the two could never be confused — but that put them below the range the ear is most sensitive to, and the shower simply swallowed them. They now ring on a <b>higher, warmer note</b>, are <b>noticeably louder</b>, and each beep is <b>half again as long</b>, with a little more space between them so they do not run together. They are still a clearly different note from the sharp 3-2-1 beeps, so a run of three minute beeps can never be mistaken for the countdown — the difference is now carried by <b>pitch and rhythm</b> rather than by one of them being quiet.',
+      benefit: 'You can count the minutes over the noise of the water, which is the entire point of them.' },
     { v: 'v1.24', date: '2026-09-07 08:25', title: 'The minutes are now counted out loud',
       what: 'The two chimes that used to play a third and two thirds of the way through your goal have been replaced by a proper <b>minute count</b>: one beep when a minute has gone, two beeps at two minutes, three at three, four at four, and so on. The old chimes told you very little — on a 6-minute goal they landed at 2:00 and 4:00, on a 9-minute goal at 3:00 and 6:00, and neither meant anything you could name. Counting the beeps now tells you exactly how long you have been standing there, with your eyes shut and your back to the phone. The beeps are deliberately <b>lower and slower</b> than the sharp 3-2-1 beeps before the finish, so the two can never be confused, and they <b>stop at your goal</b> — from there the goal chime and its repeat have the floor. The setting is the same switch as before, now called <b>Minute beeps</b> under Settings → Sounds. The blue → yellow → green bars and screen colour are unchanged.',
       benefit: 'You can now tell the time in the shower without looking at anything — the one thing the app could not tell you before without opening your eyes.' },
