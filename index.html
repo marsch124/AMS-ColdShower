@@ -674,8 +674,8 @@
       <div class="seclabel">Sounds</div>
       <div class="setcard">
         <div class="togg">
-          <span>Phase chimes</span>
-          <button class="tsw" id="phaseCueToggle" role="switch" aria-checked="true" aria-label="Toggle phase chimes"></button>
+          <span>Minute beeps</span>
+          <button class="tsw" id="phaseCueToggle" role="switch" aria-checked="true" aria-label="Toggle minute beeps"></button>
         </div>
         <div class="togg">
           <span>Keep chiming after the goal</span>
@@ -685,7 +685,7 @@
           <span>Play over the ring switch</span>
           <button class="tsw" id="mediaChToggle" role="switch" aria-checked="true" aria-label="Toggle playing through the media channel"></button>
         </div>
-        <p style="margin-top:16px;"><b>Phase chimes</b> mark each boundary as you cross into the yellow and green thirds, so you can track progress by ear. <b>Keep chiming</b> repeats the goal chime every 20 seconds through the bonus count-up, so the sound keeps telling you what the flashing green screen is telling you.</p>
+        <p style="margin-top:16px;"><b>Minute beeps</b> count the minutes out loud: one beep at 1:00, two at 2:00, three at 3:00 and so on. Count them and you know exactly how long you've been in — eyes shut, back to the phone, no glasses. They're lower and slower than the sharp 3-2-1 beeps before the finish, so the two can't be confused, and they stop at your goal. <b>Keep chiming</b> repeats the goal chime every 20 seconds through the bonus count-up, so the sound keeps telling you what the flashing green screen is telling you.</p>
         <p><b>Play over the ring switch</b> routes every cue through the music channel instead of the ringer, so you still hear them with the phone on silent — which is the only way they work for most mornings. The trade-off: while a session is running this can <b>pause music or a podcast</b> you had playing. Turn it off if you'd rather keep your audio and watch the screen instead.</p>
         <div class="setnote">All cues are pitched and layered to carry over running water. Preview them with the test timer above.</div>
       </div>
@@ -732,7 +732,7 @@
         <div class="accbody">
           <p>The timer runs through <b>three colour-coded phases</b> across equal thirds of your goal: <b>blue → yellow → green</b>. The ring, the digits, the three bars under the dial and a wash across the whole screen all carry that colour at once, so a blurry glance tells you how far you've come.</p>
           <p>The <b>three bars</b> under the dial are one per third. Each fills left to right as you move through it — a progress reading that needs no numbers at all.</p>
-          <p>As you cross into the yellow and green thirds, a <b>soft rising chime</b> marks each boundary — so you can track your progress by ear without looking. Turn these <b>phase chimes</b> off under <b>Settings → Sounds</b> if you prefer silence.</p>
+          <p><b>The minutes are counted out loud.</b> One beep when a minute has gone, two beeps at two minutes, three at three, and so on — so you always know how long you've been in without opening your eyes or turning round. The beeps are low and unhurried, quite unlike the sharp 3-2-1 beeps just before the finish, so you can't mistake one for the other. They stop the moment you reach your goal, where the goal chime takes over. Turn <b>minute beeps</b> off under <b>Settings → Sounds</b> if you prefer silence.</p>
           <p><b>Every cue is built to survive running water.</b> A single pure tone is the easiest thing in the world for a shower to swallow, so each beep and chime is a stack of several tones an octave and a twelfth apart, pitched where the ear hears best. They also play over the <b>ring switch</b>, so you still hear them with the phone on silent — see <b>Settings → Sounds</b>, where you can turn that off if you'd rather it never paused your music.</p>
           <p>You'll hear soft <b>3-2-1 beeps</b> just before the finish, then a <b>chime and three big green flashes</b> the instant you hit your goal.</p>
           <p><b>The flashing then keeps going</b> — settling into a slower, gentler green pulse that carries on until you press <b>■ STOP</b>. So if you happened to be facing away at the exact second you hit your goal, the screen is still waving at you when you next glance over; you can't miss it any more.</p>
@@ -765,7 +765,7 @@
         <div class="accbody">
           <p><b>Add to Home Screen</b> from Safari's Share menu and it runs full-screen and fully <b>offline</b>, like a real app.</p>
           <p>It keeps the <b>screen awake</b> during a session. You can also auto-start it from an <b>Apple Shortcut</b> — open it with <b>?goal=6</b> to preset minutes and <b>?start</b> to begin immediately.</p>
-          <p><b>“Tap for sound”.</b> When a Shortcut opens the app, no finger has touched the page — and iPhone blocks a web app from making <i>any</i> sound until it has been touched. That used to leave the entire shower silent: no lead-in beeps, no phase chimes, no goal chime. So a Shortcut launch now shows a <b>Tap for sound</b> prompt over the dial. One tap anywhere on it wakes the sound for the whole session, and unlike tapping the dial itself, it will <b>not</b> skip your lead-in. The timer starts immediately either way — the tap only concerns the sound — and the <b>■ STOP</b> button stays reachable underneath it.</p>
+          <p><b>“Tap for sound”.</b> When a Shortcut opens the app, no finger has touched the page — and iPhone blocks a web app from making <i>any</i> sound until it has been touched. That used to leave the entire shower silent: no lead-in beeps, no minute beeps, no goal chime. So a Shortcut launch now shows a <b>Tap for sound</b> prompt over the dial. One tap anywhere on it wakes the sound for the whole session, and unlike tapping the dial itself, it will <b>not</b> skip your lead-in. The timer starts immediately either way — the tap only concerns the sound — and the <b>■ STOP</b> button stays reachable underneath it.</p>
         </div>
       </details>
 
@@ -829,7 +829,7 @@
 
   let phase = 'idle';           // idle | ready | countdown | bonus
   let startAt = 0, readyStart = 0;
-  let raf = null, lastBeepSec = null, lastLeadNum = null, lastCueIdx = 0, lastPhIdx = -1;
+  let raf = null, lastBeepSec = null, lastLeadNum = null, lastMinute = 0, lastPhIdx = -1;
   let audio = null, master = null, wakeLock = null;
   let testMode = false;         // 30-second test run — not saved to stats
   let pbTarget = PB_NONE;       // seconds to beat for a personal best this run
@@ -891,7 +891,9 @@
   /* ---- timer-cue preferences (device-wide, default on) ---- */
   const prefOn = (k, def) => (LS.getItem(k) ?? (def ? '1' : '0')) === '1';
   const leadInOn = () => prefOn('cst.leadIn', true);
-  const phaseCueOn = () => prefOn('cst.phaseCue', true);
+  // legacy key name: this used to be the ⅓/⅔ phase chime before it became
+  // a real minute count, and reusing it keeps an existing OFF choice.
+  const minuteBeepOn = () => prefOn('cst.phaseCue', true);
   const goalRepeatOn = () => prefOn('cst.goalRepeat', true);
   const mediaChOn = () => prefOn('cst.mediaCh', true);
   const holdStopOn = () => prefOn('cst.holdStop', true);
@@ -903,7 +905,7 @@
   const setToggle = (el, on) => { if(el) el.setAttribute('aria-checked', on ? 'true' : 'false'); };
   function syncToggles(){
     setToggle($('leadInToggle'), leadInOn());
-    setToggle($('phaseCueToggle'), phaseCueOn());
+    setToggle($('phaseCueToggle'), minuteBeepOn());
     setToggle($('goalRepeatToggle'), goalRepeatOn());
     setToggle($('mediaChToggle'), mediaChOn());
     setToggle($('holdStopToggle'), holdStopOn());
@@ -950,8 +952,13 @@
   }
   const beep = () => bell(880, 0, 0.16, 0.34);
   const goBeep = () => bell(1046.5, 0, 0.26, 0.40);            // brighter "go!"
-  function phaseTone(idx){                          // soft, rising cue at ⅓ and ⅔
-    bell(idx === 1 ? 659.25 : 880, 0, 0.38, 0.22);
+  /* Minute markers: count the beeps and you know how long you've been in, with
+     your eyes shut and your back to the phone. Deliberately LOWER, rounder and
+     more widely spaced than the 3-2-1 beeps (bell 880, 0.16s) — those mean
+     "nearly there", and the two must never be mistaken for each other. */
+  const MARK_GAP = 0.42;
+  function minuteMark(n){
+    for(let i = 0; i < n; i++) bell(523.25, i * MARK_GAP, 0.30, 0.30);
   }
   function chime(soft){                             // the goal
     const g = soft ? 0.22 : 0.38;
@@ -1155,8 +1162,16 @@
       else{
         const frac = 1 - remaining/goal;
         const idx = Math.min(2, Math.floor(frac * 3));   // 0 blue · 1 yellow · 2 green
-        if(phaseCueOn() && idx > lastCueIdx){ phaseTone(idx); }
-        lastCueIdx = idx;
+        // One beep per elapsed minute: 1 beep at 1:00, 4 beeps at 4:00. This
+        // whole branch only runs while remaining > 0, so the count stops at the
+        // goal by construction — after that the goal chime has the floor. The
+        // 5-second guard keeps a marker off the back of the 3-2-1 beeps when a
+        // goal isn't a whole number of minutes.
+        const mins = Math.floor(elapsed / 60);
+        if(mins > lastMinute){
+          lastMinute = mins;
+          if(minuteBeepOn() && remaining > 5) minuteMark(mins);
+        }
         const col = colorFor(frac);
         // whole-screen glow follows the phase, so the colour is unmissable
         if(idx !== lastPhIdx){ lastPhIdx = idx; document.body.style.setProperty('--ph', PHASE_COLORS[idx]); }
@@ -1216,7 +1231,7 @@
   /* ---------- controls ---------- */
   function start(){
     ensureAudio(); claimMediaChannel(); keepAwake();
-    lastBeepSec = null; lastCueIdx = 0; lastPhIdx = -1;
+    lastBeepSec = null; lastMinute = 0; lastPhIdx = -1;
     // what it takes to go gold this run — your longest ever, or nothing to
     // beat on a first session (and never during a test run)
     const prior = testMode ? [] : loadSessions(activeId);
@@ -1241,7 +1256,7 @@
     raf = requestAnimationFrame(tick);
   }
   function beginCountdown(){
-    phase = 'countdown'; startAt = Date.now(); lastBeepSec = null; lastCueIdx = 0;
+    phase = 'countdown'; startAt = Date.now(); lastBeepSec = null; lastMinute = 0;
     $('tagline').textContent = 'Breathe slow. You’ve got this.';
     liveStart();                                     // from here on, a crash can't erase it
   }
@@ -1703,6 +1718,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.22', date: '2026-09-07 08:05', title: 'The minutes are now counted out loud',
+      what: 'The two chimes that used to play a third and two thirds of the way through your goal have been replaced by a proper <b>minute count</b>: one beep when a minute has gone, two beeps at two minutes, three at three, four at four, and so on. The old chimes told you very little — on a 6-minute goal they landed at 2:00 and 4:00, on a 9-minute goal at 3:00 and 6:00, and neither meant anything you could name. Counting the beeps now tells you exactly how long you have been standing there, with your eyes shut and your back to the phone. The beeps are deliberately <b>lower and slower</b> than the sharp 3-2-1 beeps before the finish, so the two can never be confused, and they <b>stop at your goal</b> — from there the goal chime and its repeat have the floor. The setting is the same switch as before, now called <b>Minute beeps</b> under Settings → Sounds. The blue → yellow → green bars and screen colour are unchanged.',
+      benefit: 'You can now tell the time in the shower without looking at anything — the one thing the app could not tell you before without opening your eyes.' },
     { v: 'v1.23', date: '2026-09-04 19:10', title: 'Better neighbours',
       what: 'Better neighbours. All of your AMS apps live at the same web address, and each one used to clear out every stored copy it found there that was not its own &mdash; so opening this app in Safari quietly made the last app you had looked at fetch itself again the next time. It now tidies up only its own older copies and leaves the others alone. Your own data was never involved and is untouched.' },
     { v: 'v1.22', date: '2026-09-04 18:20', title: 'One version number instead of two',
@@ -1858,7 +1876,7 @@
   $('backupNow').onclick = openSettings;
   $('backupDismiss').onclick = () => { lsSet('cst.backupSnooze', String(Date.now())); maybeShowBackupNudge(); };
   $('leadInToggle').onclick = () => { lsSet('cst.leadIn', leadInOn() ? '0' : '1'); syncToggles(); };
-  $('phaseCueToggle').onclick = () => { lsSet('cst.phaseCue', phaseCueOn() ? '0' : '1'); syncToggles(); };
+  $('phaseCueToggle').onclick = () => { lsSet('cst.phaseCue', minuteBeepOn() ? '0' : '1'); syncToggles(); };
   $('goalRepeatToggle').onclick = () => { lsSet('cst.goalRepeat', goalRepeatOn() ? '0' : '1'); syncToggles(); };
   $('holdStopToggle').onclick = () => { lsSet('cst.holdStop', holdStopOn() ? '0' : '1'); syncToggles(); };
   $('mediaChToggle').onclick = () => {
