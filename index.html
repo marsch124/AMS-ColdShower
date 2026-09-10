@@ -1626,16 +1626,34 @@
       data: collectData()
     };
   }
-  function exportData(){
+  /* A plain download link is inert inside an app opened from the Home Screen, so
+     this could save NOTHING and still call stampBackup() — recording a backup that
+     never existed and muting the monthly reminder. Share sheet first; the stamp is
+     only written once a save has really happened, and cancelling is not a backup. */
+  async function exportData(btn){
     const text = JSON.stringify(buildBackup(), null, 2);
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
     const stamp = new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
-    const a = document.createElement('a');
-    a.href = url; a.download = `cold-shower-backup-${stamp}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    stampBackup();
+    const name = `cold-shower-backup-${stamp}.json`;
+    const blob = new Blob([text], { type: 'application/json' });
+    const file = new File([blob], name, { type: 'application/json' });
+
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      try{
+        await navigator.share({ files: [file], title: 'Cold Shower backup' });
+        stampBackup(); if(btn) flashBtn(btn, 'Saved ✓');
+      }catch(err){
+        if(btn) flashBtn(btn, (err && err.name === 'AbortError') ? 'Cancelled' : 'Not saved');
+      }
+      return;
+    }
+    try{                                 // desktop browsers, where a download works
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      stampBackup(); if(btn) flashBtn(btn, 'Saved ✓');
+    }catch(err){ if(btn) flashBtn(btn, 'Not saved'); }
   }
   function flashBtn(btn, msg){
     const orig = btn.dataset.label || btn.textContent;
@@ -1725,6 +1743,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.26', date: '2026-09-10 18:40', title: 'The backup button really saves now',
+      what: 'Export &amp; backup used a plain download link, which does nothing inside an app opened from the Home Screen — so it could save no file at all, and then note that you had backed up anyway, which also switched off the monthly reminder to do it. It now hands the file to the normal iPhone share sheet, so you can drop it into Files, Mail or anywhere else, and it only records a backup once a file has actually been saved. Cancelling the share sheet says Cancelled and does not count.',
+      benefit: 'Your shower history can no longer be reported as safely backed up when no backup was made.' },
     { v: 'v1.25', date: '2026-09-07 08:35', title: 'Minute beeps you can actually hear',
       what: 'The minute beeps introduced in v1.24 were pitched too far down to survive running water. They were deliberately made lower than the 3-2-1 beeps so the two could never be confused — but that put them below the range the ear is most sensitive to, and the shower simply swallowed them. They now ring on a <b>higher, warmer note</b>, are <b>noticeably louder</b>, and each beep is <b>half again as long</b>, with a little more space between them so they do not run together. They are still a clearly different note from the sharp 3-2-1 beeps, so a run of three minute beeps can never be mistaken for the countdown — the difference is now carried by <b>pitch and rhythm</b> rather than by one of them being quiet.',
       benefit: 'You can count the minutes over the noise of the water, which is the entire point of them.' },
@@ -1881,7 +1902,7 @@
     const b = e.target.closest('button.del'); if(!b) return;
     deleteSession(parseInt(b.dataset.t, 10));
   });
-  $('exportBtn').onclick = exportData;
+  $('exportBtn').onclick = (e) => exportData(e.currentTarget);
   $('copyBtn').onclick = e => copyData(e.currentTarget);
   $('backupNow').onclick = openSettings;
   $('backupDismiss').onclick = () => { lsSet('cst.backupSnooze', String(Date.now())); maybeShowBackupNudge(); };
