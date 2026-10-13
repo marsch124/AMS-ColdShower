@@ -247,6 +247,17 @@
          border:1px solid rgba(127,227,255,.25); background:rgba(127,227,255,.05); color:var(--ice);
          font-variant-numeric:tabular-nums;}
   .pill.active{ background:var(--ice); color:#04121f; border-color:var(--ice); }
+  /* ---- "ready for more?" ----
+     Five goals in a row at the same length: the GOAL caption turns into a small
+     offer of one more minute, and the + button breathes a soft glow beside it.
+     It sits in the caption's own slot, so nothing on the screen moves. */
+  .goalval .ladder{ display:table; margin:2px auto 0; padding:1px 10px; border:none; border-radius:999px;
+                    font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; line-height:1.2;
+                    color:#04121f; background:linear-gradient(180deg,#a6ecff,#63d0f2); }
+  .goal.offer .goalval .l{ display:none; }
+  .goal.offer #plus{ border-color:var(--ice); animation:ladderglow 2.4s ease-in-out infinite; }
+  @keyframes ladderglow{ 0%,100%{ box-shadow:0 0 0 0 rgba(127,227,255,0); }
+                         50%{ box-shadow:0 0 18px 3px rgba(127,227,255,.55); } }
 
   /* three phase bars — one per third of the goal, filling left to right in
      blue → yellow → green. Reads as pure shape and colour: no glasses needed. */
@@ -666,10 +677,10 @@
     </div>
 
     <div id="picker">
-      <div class="goal">
-        <button class="step" id="minus" aria-label="Less time">−</button>
-        <div class="goalval"><span class="g" id="goalText">3:00</span><span class="l">goal</span></div>
-        <button class="step" id="plus" aria-label="More time">+</button>
+      <div class="goal" id="goalRow" data-testid="goal-row">
+        <button class="step" id="minus" aria-label="Less time" data-testid="goal-minus">−</button>
+        <div class="goalval"><span class="g" id="goalText" data-testid="goal-value">3:00</span><span class="l">goal</span><button class="ladder hide" id="ladderBtn" data-testid="goal-ladder">Ready for 4:00?</button></div>
+        <button class="step" id="plus" aria-label="More time" data-testid="goal-plus">+</button>
       </div>
       <div class="presets" id="presets"></div>
     </div>
@@ -832,6 +843,8 @@
         <summary>Getting started <span class="chev">›</span></summary>
         <div class="accbody">
           <p><b>Pick a goal</b> with the 3 / 6 / 9-minute presets, or nudge it ±1 minute with the − / + buttons.</p>
+          <p><b>“Ready for more?”</b> When you've made your goal <b>five times in a row at the same length</b> — five 3:00 showers, all made — the word <b>GOAL</b> under the time turns into a small button that asks, for example, <b>READY FOR 4:00?</b>, and the <b>+</b> button glows softly beside it. Tap either one to raise your goal by a minute. Nothing changes until you tap.</p>
+          <p>It's an offer, not a nag: if you'd rather stay where you are, just take your next shower at the same goal and the question <b>steps aside</b> until you've strung together another five (it asks again at 10, 15, 20 in a row …). A missed goal, or a shower at a different length, starts the count again. Each profile has its own count, and it never offers more than the 30-minute maximum.</p>
           <p><b>Tap ▶ START</b> and a <b>lead-in</b> counts you in, giving you time to set the water to cold and step in before timing begins. Just the number counts down, nice and big. Set it to <b>10, 20 or 30 seconds</b> under <b>Settings → Before you start</b>, tap the dial to skip it, or switch it off entirely.</p>
           <p>Let the ring count you down. <b>Hold</b> the big <b>■ STOP</b> button for about a second to end and save the session — a white bar sweeps across it as you hold, and letting go early cancels. Holding rather than tapping means a wet hand brushing the phone can't end your shower; if you'd rather have a plain tap, turn it off under <b>Settings → While it runs</b>.</p>
           <p>The button is a signal in itself: <b>red</b> while you're short of your goal, <b>green</b> the moment you've made it, and <b>gold</b> if you go past your longest-ever shower.</p>
@@ -1305,6 +1318,7 @@
     setRing(1, 'var(--ice)');
     document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', +p.dataset.s === goal));
     renderHomeStat();
+    renderLadder();
   }
   /* One line saying where you stand, on the one screen where your glasses are
      still on. Lives in <header>, so body.running hides it with everything else. */
@@ -1325,6 +1339,29 @@
     // information beats decoration, and the header stays one line shorter —
     // which is what stopped START riding up into the presets.
     sub.classList.add('hide');
+  }
+  /* "Ready for more?" — how many goals in a row this profile has hit at
+     exactly today's goal, counting back from the latest shower. Offered at 5,
+     10, 15 … in a row: ignore it (shower again at the same goal) and it steps
+     aside until the next five. Taking it is just +1 minute. data-streak and
+     data-offer are what the UI tests read. */
+  const LADDER_EVERY = 5;
+  function hitsInARow(s){
+    let n = 0;
+    for(let i = s.length - 1; i >= 0; i--){
+      if(s[i].reached && s[i].goal === goal) n++; else break;
+    }
+    return n;
+  }
+  function renderLadder(){
+    const row = $('goalRow'), btn = $('ladderBtn');
+    const n = hitsInARow(loadSessions(activeId));
+    const offer = n >= LADDER_EVERY && n % LADDER_EVERY === 0 && goal + STEP <= MAX_GOAL;
+    row.classList.toggle('offer', offer);
+    btn.classList.toggle('hide', !offer);
+    if(offer) btn.textContent = 'Ready for ' + fmt(goal + STEP) + '?';
+    row.dataset.streak = String(n);
+    row.dataset.offer = offer ? '1' : '0';
   }
   /* This week as seven dots, Monday first (Swedish weeks). Built from calendar
      dates, not by adding 24-hour steps, so the clock change can't shift a day.
@@ -2068,6 +2105,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.32', date: '2026-10-13 11:30', title: 'Ready for more?',
+      what: 'After you have made your goal <b>five times in a row at the same length</b>, the word GOAL under the time becomes a small button — for example <b>READY FOR 4:00?</b> — and the <b>+</b> button glows softly. Tap either to add a minute. If you would rather stay put, simply shower again at the same goal and the offer steps aside until the next five in a row. A missed goal or a different length starts the count again; each profile counts separately. Full details in <b>How this works → Getting started</b>.',
+      benefit: 'When you are ready to step up, the app notices — and it never pushes.' },
     { v: 'v1.31', date: '2026-10-13 10:55', title: 'This week, as seven dots',
       what: 'The home screen now shows <b>this week as seven dots</b>, Monday to Sunday, right under the streak line. A <b>filled</b> dot is a day you showered cold, <b>today</b> has a ring around it, missed days are empty circles and the days still to come are fainter. A new row starts every Monday, and the dots follow whichever profile is chosen. On smaller iPhones the home-screen dial is a little smaller to make room, so the START button keeps its distance from the time buttons. Full details in <b>How this works → Getting started</b>.',
       benefit: 'How your week is going is a picture you take in at a glance, not a sentence to read.' },
@@ -2207,6 +2247,7 @@
   /* ============ wire up ============ */
   $('minus').onclick = () => { goal = Math.max(MIN_GOAL, goal - STEP); saveGoal(); renderIdle(); };
   $('plus').onclick  = () => { goal = Math.min(MAX_GOAL, goal + STEP); saveGoal(); renderIdle(); };
+  $('ladderBtn').onclick = () => $('plus').onclick();     // "Ready for 4:00?" = one more minute
   $('startBtn').onclick = btnClick;
   $('startBtn').addEventListener('pointerdown', holdBegin);
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
