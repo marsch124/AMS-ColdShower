@@ -172,6 +172,18 @@
   }
   .track{ fill:none; stroke:var(--ring-track); stroke-width:11; }
   .prog{ fill:none; stroke:var(--ice); stroke-width:11; stroke-linecap:round; }
+  /* ---- the gold record mark ----
+     A short gold bar across the ring at the exact point where your longest-ever
+     shower falls. During the countdown it sits where the shrinking ring will be
+     when you equal it; past the goal it sits at the top, and a gold line runs
+     round the (green) ring towards it — close the circle, beat the record.
+     Gold and position, nothing to read. Hidden the moment you pass it. */
+  .recmark line{ stroke-linecap:round; }
+  .recmark .rm-under{ stroke:#04121f; stroke-width:13; opacity:.75; }
+  .recmark .rm-top{ stroke:#ffd45e; stroke-width:8; }
+  /* past the goal the ring underneath stays green — "done" — while the gold
+     record lap draws over it */
+  body.done .track{ stroke:var(--go); }
   .readout{ position:absolute; inset:0; display:flex; flex-direction:column;
             align-items:center; justify-content:center; }
   #time{ font-size:34vw; line-height:.9; font-weight:900; letter-spacing:-.03em;
@@ -592,6 +604,11 @@
         <g filter="url(#wobble)">
           <circle class="track" cx="100" cy="100" r="86"></circle>
           <circle class="prog" id="prog" cx="100" cy="100" r="86"></circle>
+          <!-- drawn pointing at 12 o'clock (the svg is turned -90°), then rotated into place -->
+          <g id="pbMark" class="recmark hide" data-testid="pb-mark">
+            <line class="rm-under" x1="170" y1="100" x2="201" y2="100"></line>
+            <line class="rm-top"   x1="170" y1="100" x2="201" y2="100"></line>
+          </g>
         </g>
       </svg>
       <div class="readout">
@@ -798,6 +815,18 @@
           <p><b>Nothing else moves.</b> The band only ever grows <b>outward</b>, away from the number, so the digits never shift, shrink or get covered — you can keep reading the time while you breathe.</p>
           <p><b>No glasses needed.</b> It is one big, slow movement of light — you follow it the same way you would follow someone's hand rising and falling, without having to read or recognise anything.</p>
           <p><b>Turning it off:</b> Settings → <b>While it runs</b> → <b>Breathe with the ring</b>. The choice is remembered on this phone. Try it with the <b>30-second test timer</b> in Settings to see it without a real shower.</p>
+        </div>
+      </details>
+      <details class="acc">
+        <summary>The gold mark for your record <span class="chev">›</span></summary>
+        <div class="accbody">
+          <p><b>Your longest-ever shower now has a place on the ring</b>, so you can watch yourself closing in on it instead of only finding out once you've passed it.</p>
+          <p><b>What it looks like:</b> a short, thick <b>gold bar across the ring</b>. It is the only gold thing on the screen until you beat your record, so you can spot it without glasses.</p>
+          <p><b>If your record is shorter than today's goal</b> — say your best is 2:30 and you've set 3:00 — the gold bar sits on the ring at the exact point where the shrinking ring will be when you reach 2:30. As the ring shrinks back towards the top, its end creeps up to the gold bar; the moment it gets there, you've equalled your record.</p>
+          <p><b>If your record is longer than today's goal</b> — the usual case once you've been at it for a while — nothing extra shows during the countdown. When you reach the goal the ring turns <b>green</b> as always, the gold bar appears at the <b>very top</b> of the ring, and a <b>gold line starts running round the green ring</b> from the top, clockwise. When the gold line has gone all the way round and closed the circle at the gold bar, you have matched your longest shower. So in your bonus time you can see at a glance how far round you are — a quarter, half way, nearly there.</p>
+          <p><b>The moment you pass it</b>, the gold bar disappears and the whole screen turns gold, exactly as before — gold wash, gold ring, gold button and a brighter flourish — and the finish screen shows <b>New best</b>.</p>
+          <p><b>When there's no mark:</b> on your very first shower (there's no record yet), during the 30-second test timer (it never counts), and once you've already beaten your record in that shower.</p>
+          <p>Your record is <b>per profile</b> — each person chases their own longest shower.</p>
         </div>
       </details>
       <details class="acc">
@@ -1173,6 +1202,19 @@
       if(segPct[i] !== pct){ segPct[i] = pct; segFills[i].style.width = pct + '%'; }
     }
   }
+  /* The gold record mark: degrees clockwise from 12 o'clock, or null = hidden.
+     data-at is what the UI tests read. */
+  const pbMark = $('pbMark');
+  const RECORD_LAP = '#ffd45e';
+  let pbMarkAt = null;
+  function placePbMark(deg){
+    if(deg === pbMarkAt) return;
+    pbMarkAt = deg;
+    if(deg === null){ pbMark.classList.add('hide'); pbMark.dataset.at = ''; return; }
+    pbMark.setAttribute('transform', `rotate(${deg} 100 100)`);
+    pbMark.dataset.at = String(Math.round(deg));
+    pbMark.classList.remove('hide');
+  }
   /* breathing guide state: 'on' while the six breaths run, 'done' once they
      have, 'off' otherwise. The class drives the animation; data-breath is what
      the UI tests read. */
@@ -1212,6 +1254,7 @@
     PRESETS.forEach(s => {
       const b = document.createElement('button');
       b.className = 'pill'; b.dataset.s = s; b.textContent = fmt(s);
+      b.dataset.testid = 'preset-' + s;
       b.onclick = () => { goal = s; saveGoal(); renderIdle(); };
       wrap.appendChild(b);
     });
@@ -1271,6 +1314,9 @@
         $('time').style.color = pbHit ? 'var(--ink)' : col;
         setRing(remaining/goal, pbHit ? '#f5b83d' : col);
         setSegs(frac);
+        // a record shorter than the goal: mark where the shrinking ring will
+        // be when you equal it (a record beyond the goal waits for the bonus)
+        placePbMark(!pbHit && pbTarget < goal ? (1 - pbTarget / goal) * 360 : null);
       }
     }
     if(phase === 'bonus'){
@@ -1279,7 +1325,14 @@
       // battery died and then log a nonsense duration. Stop and save instead.
       if(elapsed - goal >= AUTOSTOP_BONUS){ stop(); return; }
       setTime('+' + fmt(elapsed - goal));
-      setRing(1, pbHit ? '#f5b83d' : 'var(--go)');
+      if(!pbHit && pbTarget > goal && pbTarget !== PB_NONE){
+        // the record lap: gold runs round the green ring to the mark at the top
+        placePbMark(0);
+        setRing((elapsed - goal) / (pbTarget - goal), RECORD_LAP);
+      } else {
+        placePbMark(null);
+        setRing(1, pbHit ? '#f5b83d' : 'var(--go)');
+      }
     }
     raf = requestAnimationFrame(tick);
   }
@@ -1311,6 +1364,7 @@
      waiting for the finish screen. Pure colour — nothing new to read. */
   function hitPB(){
     pbHit = true;
+    placePbMark(null);
     document.body.classList.add('gold');
     document.documentElement.classList.add('gold');
     document.body.classList.remove('flash'); void document.body.offsetWidth;
@@ -1388,6 +1442,7 @@
     clearInterval(goalRepeatT); goalRepeatT = null;
     releaseMediaChannel(); holdCancel();
     pbTarget = PB_NONE; pbHit = false;
+    placePbMark(null);
     $('audioGate').classList.add('hide');
     if(testMode){ testMode = false; loadGoal(); }   // restore the real goal
     document.body.classList.remove('flash', 'done', 'running', 'gold');
@@ -1911,6 +1966,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.29', date: '2026-10-13 09:40', title: 'A gold mark for your record',
+      what: 'Your <b>longest-ever shower</b> now has a <b>gold mark on the ring</b>. If your record is shorter than today\'s goal, the gold bar sits where the shrinking ring will be when you equal it. If your record is longer than the goal, the gold bar appears at the <b>top of the ring</b> once you reach the goal, and a <b>gold line runs round the green ring</b> towards it — when it closes the circle, you have matched your record. Pass it and the whole screen turns gold, as before. There is no mark on a first shower, in the test timer, or once the record has fallen. Full details in <b>How this works → The gold mark for your record</b>.',
+      benefit: 'You can see your record coming, not only find out after you have beaten it.' },
     { v: 'v1.28', date: '2026-10-13 09:05', title: 'Breathe with the ring',
       what: 'For the <b>first minute</b> of every shower the ring now <b>guides your breathing</b>. A soft band of light <b>swells out</b> from the ring for about four seconds — breathe in — and <b>sinks back</b> for about six — breathe out. It does this six times, which is exactly the first minute, and then stops by itself and the screen looks as it always has. It only grows outward, so the number never moves or gets covered, and it glows in the colour of the phase you are in. Switch it off under <b>Settings → While it runs → Breathe with the ring</b>. The full explanation is in <b>How this works → Breathing with the ring</b>.',
       benefit: 'The cold-shock gasp of the first minute gets a slow rhythm to follow, with nothing to read.' },
