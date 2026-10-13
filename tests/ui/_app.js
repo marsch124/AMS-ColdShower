@@ -20,3 +20,14 @@ export async function restartApp(page) {
 async function settled(page) {
   await expect(page.locator('body[data-ready="1"]')).toBeAttached({ timeout: 20_000 });
 }
+
+// How much of an element actually reaches the eye: its own opacity times every
+// ancestor's. (Playwright's toBeVisible() counts opacity 0 as "visible", and a
+// screen faded to nothing once passed a test that way.)
+export async function seenOpacity(page, testid) {
+  return page.getByTestId(testid).evaluate((el) => {
+    let o = 1;
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) o *= parseFloat(getComputedStyle(n).opacity);
+    return o;
+  });
+}

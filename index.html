@@ -150,6 +150,26 @@
          animation:breathe 7s ease-in-out infinite; }
   @keyframes breathe{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.025); } }
   .dial svg{ width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
+  /* ---- breathe with the ring (first minute) ----
+     The first minute of cold is when the gasp hits. A soft band of light swells
+     OUT from the ring for 4 s (breathe in) and sinks back for 6 s (breathe out),
+     six times, then stops by itself. It grows outward only, so it never touches
+     the digits, and the number itself never moves. Pure motion — nothing to read. */
+  /* A plain blurred circle laid over the ring, BEHIND it (the dial isolates its
+     own stacking, so z-index:-1 stays inside it). Deliberately not part of the
+     SVG: an animated shape inside the ring's wobble filter makes the browser
+     redraw the filter every frame, and in testing it blanked the whole screen. */
+  .dial{ isolation:isolate; }
+  .breathband{ position:absolute; inset:7%; border-radius:50%; z-index:-1; pointer-events:none;
+           border:20px solid var(--ph, #3ea6ff); filter:blur(6px); opacity:0; }
+  body.running.breathing .breathband{ animation:breathguide 10s ease-in-out 6; }
+  /* the dial's own gentle 7-second pulse would fight the 10-second rhythm */
+  body.running.breathing .dial{ animation:none; }
+  @keyframes breathguide{
+    0%  { transform:scale(1);    opacity:.12; }
+    40% { transform:scale(1.3);  opacity:.7; }
+    100%{ transform:scale(1);    opacity:.12; }
+  }
   .track{ fill:none; stroke:var(--ring-track); stroke-width:11; }
   .prog{ fill:none; stroke:var(--ice); stroke-width:11; stroke-linecap:round; }
   .readout{ position:absolute; inset:0; display:flex; flex-direction:column;
@@ -554,6 +574,7 @@
 
   <main>
     <div class="dial">
+      <div class="breathband" id="breath" aria-hidden="true"></div>
       <svg viewBox="0 0 200 200" aria-hidden="true">
         <defs>
           <filter id="wobble" x="-30%" y="-30%" width="160%" height="160%">
@@ -574,7 +595,7 @@
         </g>
       </svg>
       <div class="readout">
-        <div id="time">3:00</div>
+        <div id="time" data-testid="time">3:00</div>
       </div>
     </div>
 
@@ -618,7 +639,7 @@
   <div id="overlay" class="overlay center hide">
     <div class="pbbadge hide" id="ovPB"></div>
     <div class="big" id="ovTime">0:00</div>
-    <button class="btn" id="againBtn">DONE</button>
+    <button class="btn" id="againBtn" data-testid="finish-done">DONE</button>
   </div>
 
   <!-- user picker sheet -->
@@ -680,7 +701,7 @@
   <!-- settings -->
   <div id="settings" class="overlay hide">
     <div class="statshead">
-      <button class="iconbtn" id="settingsBack" aria-label="Back">‹</button>
+      <button class="iconbtn" id="settingsBack" aria-label="Back" data-testid="settings-back">‹</button>
       <div class="statstitle">Settings</div>
       <div style="width:42px"></div>
     </div>
@@ -732,7 +753,12 @@
           <span>Hold the button to stop</span>
           <button class="tsw" id="holdStopToggle" role="switch" aria-checked="true" aria-label="Toggle hold to stop"></button>
         </div>
-        <p style="margin-top:16px;">With this on, <b>■ STOP</b> has to be held for about a second — a white bar sweeps across the button as you hold, and letting go early cancels it. Wet hands and a phone at chest height make a single accidental tap far too easy, and that tap used to end your shower.</p>
+        <div class="togg">
+          <span>Breathe with the ring</span>
+          <button class="tsw" id="breathToggle" role="switch" aria-checked="true" aria-label="Toggle breathing guide" data-testid="breath-toggle"></button>
+        </div>
+        <p style="margin-top:16px;"><b>Breathe with the ring</b> guides your breathing through the first minute, when the cold hits hardest: a soft band of light swells out from the ring for four seconds — breathe in — and sinks back for six — breathe out. Six slow breaths, then it stops by itself.</p>
+        <p>With <b>hold the button</b> on, <b>■ STOP</b> has to be held for about a second — a white bar sweeps across the button as you hold, and letting go early cancels it. Wet hands and a phone at chest height make a single accidental tap far too easy, and that tap used to end your shower.</p>
         <p>Whatever happens, the app <b>stops itself</b> after 15 minutes of bonus time and saves the session. If you step out and forget the phone, it can no longer count up all morning holding the screen awake and then log a nonsense time.</p>
       </div>
 
@@ -761,6 +787,17 @@
           <p><b>And the screen after you stop</b> is down to two things: <b>one big number</b> (how long you lasted) and <b>one big button</b>. How it went is the <b>colour of the whole screen</b> — <b>green</b> if you made your goal, <b>amber</b> if you came close (within a tenth of it), <b>icy blue</b> if you stopped well short, <b>gold</b> for a personal best — so there's genuinely nothing to read while you're dripping.</p>
           <p>The amber matters: stopping at 5:50 on a 6-minute goal is not the same story as stopping at 30 seconds, and it no longer looks like it.</p>
           <p>Your goal, how far over or under you were, and everything else moved to <b>Stats</b>, for when your glasses are back on. Press <b>DONE</b> to get out of the finish screen, then open <b>Stats</b> with the chart button at the top of the home screen.</p>
+        </div>
+      </details>
+      <details class="acc">
+        <summary>Breathing with the ring <span class="chev">›</span></summary>
+        <div class="accbody">
+          <p><b>The first minute is the hard one.</b> When cold water first hits, the body gasps and the breath goes short and fast. Slow, long breaths — especially long breaths <b>out</b> — are what calm that reflex down, and the ring now leads you through them.</p>
+          <p><b>What you see:</b> as soon as the timer starts (after the lead-in), a <b>soft band of light swells out from the ring</b> for about <b>four seconds</b> — breathe <b>in</b> while it grows — and then <b>sinks back</b> over about <b>six seconds</b> — breathe <b>out</b> while it shrinks. It glows in the colour of the phase you're in, so it is blue at the start.</p>
+          <p><b>Six breaths, then it stops by itself.</b> That is exactly the first minute. After that the ring goes back to its usual gentle pulse and the screen looks the same as always. If your goal is shorter than a minute (like the 30-second test), the breathing stops the moment you reach the goal.</p>
+          <p><b>Nothing else moves.</b> The band only ever grows <b>outward</b>, away from the number, so the digits never shift, shrink or get covered — you can keep reading the time while you breathe.</p>
+          <p><b>No glasses needed.</b> It is one big, slow movement of light — you follow it the same way you would follow someone's hand rising and falling, without having to read or recognise anything.</p>
+          <p><b>Turning it off:</b> Settings → <b>While it runs</b> → <b>Breathe with the ring</b>. The choice is remembered on this phone. Try it with the <b>30-second test timer</b> in Settings to see it without a real shower.</p>
         </div>
       </details>
       <details class="acc">
@@ -934,6 +971,7 @@
   const goalRepeatOn = () => prefOn('cst.goalRepeat', true);
   const mediaChOn = () => prefOn('cst.mediaCh', true);
   const holdStopOn = () => prefOn('cst.holdStop', true);
+  const breathOn = () => prefOn('cst.breathGuide', true);
   const LEAD_CHOICES = [10, 20, 30];
   function leadSecs(){
     const n = parseInt(LS.getItem('cst.leadSecs') || '10', 10);
@@ -946,6 +984,7 @@
     setToggle($('goalRepeatToggle'), goalRepeatOn());
     setToggle($('mediaChToggle'), mediaChOn());
     setToggle($('holdStopToggle'), holdStopOn());
+    setToggle($('breathToggle'), breathOn());
     const n = leadSecs();
     document.querySelectorAll('#leadLen button').forEach(b => b.classList.toggle('active', +b.dataset.s === n));
   }
@@ -1134,6 +1173,13 @@
       if(segPct[i] !== pct){ segPct[i] = pct; segFills[i].style.width = pct + '%'; }
     }
   }
+  /* breathing guide state: 'on' while the six breaths run, 'done' once they
+     have, 'off' otherwise. The class drives the animation; data-breath is what
+     the UI tests read. */
+  function setBreath(st){
+    document.body.classList.toggle('breathing', st === 'on');
+    document.body.dataset.breath = st;
+  }
   function renderIdle(){
     $('goalText').textContent = fmt(goal);
     setTime(fmt(goal));
@@ -1239,6 +1285,7 @@
   }
   function reachGoal(){
     phase = 'bonus'; lastBeepSec = null; chime();
+    if(document.body.classList.contains('breathing')) setBreath('done');   // a goal under a minute
     document.body.classList.add('done');            // persistent green background
     document.documentElement.classList.add('done'); // green reaches the bottom safe-area too
     document.body.classList.remove('flash'); void document.body.offsetWidth;
@@ -1302,6 +1349,7 @@
   function beginCountdown(){
     phase = 'countdown'; startAt = Date.now(); lastBeepSec = null; lastMinute = 0;
     $('tagline').textContent = 'Breathe slow. You’ve got this.';
+    setBreath(breathOn() ? 'on' : 'off');            // the first minute: breathe with the ring
     liveStart();                                     // from here on, a crash can't erase it
   }
   function skipLeadIn(){                             // tap the dial to skip the lead-in
@@ -1343,6 +1391,7 @@
     $('audioGate').classList.add('hide');
     if(testMode){ testMode = false; loadGoal(); }   // restore the real goal
     document.body.classList.remove('flash', 'done', 'running', 'gold');
+    setBreath('off');
     document.body.style.removeProperty('--ph');
     document.documentElement.classList.remove('done', 'gold');
     $('segbar').classList.add('hide');
@@ -1862,6 +1911,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.28', date: '2026-10-13 09:05', title: 'Breathe with the ring',
+      what: 'For the <b>first minute</b> of every shower the ring now <b>guides your breathing</b>. A soft band of light <b>swells out</b> from the ring for about four seconds — breathe in — and <b>sinks back</b> for about six — breathe out. It does this six times, which is exactly the first minute, and then stops by itself and the screen looks as it always has. It only grows outward, so the number never moves or gets covered, and it glows in the colour of the phase you are in. Switch it off under <b>Settings → While it runs → Breathe with the ring</b>. The full explanation is in <b>How this works → Breathing with the ring</b>.',
+      benefit: 'The cold-shock gasp of the first minute gets a slow rhythm to follow, with nothing to read.' },
     { v: 'v1.27', date: '2026-10-13 08:20', title: 'A photo for every profile',
       what: 'Each profile can now have a <b>photo</b> instead of just its first letter. Open the name chip at the top left and tap the round picture next to a name — the one with the little camera — then <b>Choose photo</b> to take a new picture or pick one from your library. The app trims it to a neat circle by itself, a little above the middle on an upright photo so the face stays in. The face then appears in the <b>name chip</b>, in the <b>Who’s showering?</b> list and on the <b>stats screen</b>. <b>Change photo</b> swaps it and <b>Remove photo</b> brings the initial back. Photos are kept small, so they take almost no room, and they are included in every <b>backup and restore</b>.',
       benefit: 'You see whose shower it is at a glance, without having to read a name.' },
@@ -2042,6 +2094,13 @@
   $('phaseCueToggle').onclick = () => { lsSet('cst.phaseCue', minuteBeepOn() ? '0' : '1'); syncToggles(); };
   $('goalRepeatToggle').onclick = () => { lsSet('cst.goalRepeat', goalRepeatOn() ? '0' : '1'); syncToggles(); };
   $('holdStopToggle').onclick = () => { lsSet('cst.holdStop', holdStopOn() ? '0' : '1'); syncToggles(); };
+  $('breathToggle').onclick = () => { lsSet('cst.breathGuide', breathOn() ? '0' : '1'); syncToggles(); };
+  // The breathing guide ends itself after its six breaths (pure CSS); this
+  // only notes that it has, and gives the dial its own gentle pulse back.
+  $('breath').addEventListener('animationend', e => {
+    if(e.animationName !== 'breathguide') return;
+    setBreath('done');
+  });
   $('mediaChToggle').onclick = () => {
     const turningOff = mediaChOn();
     lsSet('cst.mediaCh', turningOff ? '0' : '1');
