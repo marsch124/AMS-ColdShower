@@ -150,12 +150,15 @@
 
   /* top bar */
   .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  /* The top bar is drawn at full strength: solid colours, no pale-to-bright
+     fades (they read as a haze over the top of each icon), and edges clear
+     enough that the buttons look like buttons, not ghosts. */
   .chip{ display:flex; align-items:center; gap:8px; padding:5px 12px 5px 6px; border-radius:999px;
-         border:1px solid var(--line); background:var(--card); color:var(--ink); font-size:15px; font-weight:600;}
+         border:1px solid rgba(127,227,255,.34); background:rgba(127,227,255,.1); color:var(--ink); font-size:15px; font-weight:600;}
   .chip .av{ width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-             font-size:13px; font-weight:800; color:#04121f; background:linear-gradient(180deg,#a6ecff,#63d0f2);}
-  .chip .caret{ color:var(--ice-dim); font-size:12px; }
-  .iconbtn{ width:42px; height:42px; border-radius:50%; border:1px solid var(--line); background:var(--card);
+             font-size:13px; font-weight:800; color:#04121f; background:var(--ice);}
+  .chip .caret{ color:var(--ice); font-size:12px; }
+  .iconbtn{ width:42px; height:42px; border-radius:50%; border:1px solid rgba(127,227,255,.34); background:rgba(127,227,255,.1);
             color:var(--ink); font-size:20px; display:flex; align-items:center; justify-content:center;}
   .iconbtn:active,.chip:active{ background:rgba(127,227,255,.16); }
 
@@ -436,7 +439,7 @@
          border:1px solid var(--line); background:var(--card); }
   .urow.active{ border-color:var(--ice); background:rgba(127,227,255,.14); }
   .urow .av{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-             font-weight:800; color:#04121f; background:linear-gradient(180deg,#a6ecff,#63d0f2); }
+             font-weight:800; color:#04121f; background:var(--ice); }
   .urow .nm{ flex:1; font-size:17px; font-weight:600; }
   .urow .tick{ color:var(--go); font-weight:900; }
   .urow .mini{ width:34px; height:34px; border-radius:9px; border:1px solid var(--line);
@@ -458,10 +461,10 @@
   .urow .avwrap .cam svg{ width:12px; height:12px; display:block; }
   .av.big{ width:136px; height:136px; border-radius:50%; margin:6px auto 4px; display:flex;
            align-items:center; justify-content:center; font-size:58px; font-weight:800; color:#04121f;
-           background-color:#63d0f2; background-image:linear-gradient(180deg,#a6ecff,#63d0f2);
+           background-color:var(--ice);
            border:3px solid rgba(127,227,255,.35); padding:0; }
   .av.sm{ width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-          font-size:13px; font-weight:800; color:#04121f; background-image:linear-gradient(180deg,#a6ecff,#63d0f2); }
+          font-size:13px; font-weight:800; color:#04121f; background-color:var(--ice); }
   #photoSheet .btn.ghost{ max-width:none; }
   .btn.ghost.danger{ border-color:rgba(255,90,110,.4); color:#ff8f9c; }
   .addrow{ display:flex; gap:8px; }
@@ -599,7 +602,7 @@
       <button class="iconbtn" id="statsBtn" aria-label="Statistics" data-testid="stats-btn">
         <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M2.5 16.4 C5 16.2 6.1 11.3 9 11.9 C11.6 12.4 12.6 7.4 15.4 6.1 C17.6 5.1 19.4 4.6 21.5 3.4 L21.5 20 L2.5 20 Z"
-                fill="#7fe3ff" opacity="0.16"/>
+                fill="#7fe3ff" opacity="0.32"/>
           <path d="M2.5 16.4 C5 16.2 6.1 11.3 9 11.9 C11.6 12.4 12.6 7.4 15.4 6.1 C17.6 5.1 19.4 4.6 21.5 3.4"
                 stroke="#7fe3ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
           <circle cx="21.5" cy="3.5" r="2.4" fill="#7fe3ff"/>
@@ -623,12 +626,8 @@
               </g>
               <circle cx="12" cy="12" r="3.05" fill="black"/>
             </mask>
-            <linearGradient id="cogGrad" x1="0" y1="0" x2="0" y2="24" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#a6ecff"/>
-              <stop offset="1" stop-color="#63d0f2"/>
-            </linearGradient>
           </defs>
-          <rect width="24" height="24" fill="url(#cogGrad)" mask="url(#cogHole)"/>
+          <rect width="24" height="24" fill="#7fe3ff" mask="url(#cogHole)" data-testid="settings-cog"/>
         </svg>
       </button>
     </div>
@@ -2154,6 +2153,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.35', date: '2026-10-13 13:35', title: 'A crisper top bar',
+      what: 'The three controls at the top of the home screen — your <b>name chip</b>, <b>Stats</b> and <b>Settings</b> — looked slightly dimmed at the top. The round picture with your initial and the Settings cog both faded from a pale, almost white blue at the top to a stronger blue at the bottom, which read as a haze over them, and the round buttons were very faint. They are now drawn in <b>one solid, full-strength colour</b> all the way through, the area under the Stats line is fuller, and the buttons have a clearer edge. The round initial looks the same everywhere it appears — the list of people, the photo panel and the Stats screen.',
+      benefit: 'The controls you tap are crisp and clear, with nothing faded about them.' },
     { v: 'v1.34', date: '2026-10-13 12:50', title: 'START always fits on the screen',
       what: 'On smaller iPhones the monthly <b>backup reminder</b> could push the <b>START</b> button partly or completely off the bottom of the home screen — up to half the button on an iPhone SE. The big dial on the home screen now <b>shrinks just enough to make room</b> for whatever is showing at the top (the reminder, the week dots, the “Ready for more?” offer), with the number inside shrinking along with it so it stays inside the ring, and it grows back the moment the space is free again. The dial in the shower is unchanged. Details in <b>How this works → Getting started</b>.',
       benefit: 'The one button you need is always on the screen, on every iPhone.' },
