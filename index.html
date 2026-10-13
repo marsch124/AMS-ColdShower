@@ -355,15 +355,15 @@
      body.running hides it with everything else the moment a session starts. */
   .homestat{ display:block; margin:7px 0 0; font-size:14px; font-weight:700;
              letter-spacing:.04em; color:var(--ice); font-variant-numeric:tabular-nums; }
-  /* ---- this week, as seven dots ----
-     Monday → Sunday. Filled = showered that day; the ring = today; faint =
-     still to come. Your week at a glance, as a picture rather than a sentence. */
+  /* ---- the last seven days, as seven dots ----
+     A rolling week: today is always the right-most dot, the six days before it
+     run to its left. Filled = showered that day, empty circle = not. Nothing
+     else — no ring for today, no faint future days (his calls, v1.37:
+     "just filled. Minimalistic" and "make this a rolling week"). */
   .weekdots{ display:flex; justify-content:center; gap:9px; margin:8px 0 0; }
   .weekdots i{ width:11px; height:11px; border-radius:50%; box-sizing:border-box;
                border:1.5px solid rgba(127,227,255,.38); }
   .weekdots i.did{ background:var(--ice); border-color:var(--ice); }
-  .weekdots i.future{ border-color:rgba(127,227,255,.14); }
-  .weekdots i.today{ box-shadow:0 0 0 2.5px #04121f, 0 0 0 4px var(--ice); border-color:var(--ice); }
 
   /* home-screen backup reminder (slim, dismissible) */
   .nudge{ display:flex; align-items:center; gap:10px; width:100%; max-width:420px;
@@ -644,7 +644,7 @@
     <h1>Cold Shower</h1>
     <p class="sub" id="tagline">Set your goal &amp; brace yourself</p>
     <span class="homestat hide" id="homeStat"></span>
-    <span class="weekdots hide" id="weekDots" data-testid="week-dots" aria-label="This week"></span>
+    <span class="weekdots hide" id="weekDots" data-testid="week-dots" aria-label="The last seven days"></span>
     <span class="ver" id="appVer" data-testid="app-version"></span>
   </header>
 
@@ -867,7 +867,7 @@
           <p>Let the ring count you down. <b>Hold</b> the big <b>■ STOP</b> button for about a second to end and save the session — a white bar sweeps across it as you hold, and letting go early cancels. Holding rather than tapping means a wet hand brushing the phone can't end your shower; if you'd rather have a plain tap, turn it off under <b>Settings → While it runs</b>.</p>
           <p>The button is a signal in itself: <b>red</b> while you're short of your goal, <b>green</b> the moment you've made it, and <b>gold</b> if you go past your longest-ever shower.</p>
           <p>Under the title, one line tells you <b>how many days running</b> you've kept it up and <b>how long your last shower was</b>. It takes the place of the “set your goal” tagline rather than adding a line to the screen — so the START button keeps its distance from the presets. Before your first shower the tagline shows instead, and the line disappears with everything else once a session starts.</p>
-          <p><b>This week, as seven dots.</b> Right under that line sit seven small dots — one for each day of this week, <b>Monday on the left, Sunday on the right</b>. A <b>filled</b> dot means you showered cold that day. <b>Today</b> has a ring around it, so you always know where you are in the week — empty with a ring means today's shower is still to come, filled with a ring means it's done. Days you missed earlier in the week show as an <b>empty circle</b>; the days still ahead are <b>fainter</b> still. On Monday morning a fresh row starts. The dots follow whichever profile is chosen, and appear once that profile has its first shower.</p>
+          <p><b>Your last seven days, as seven dots.</b> Right under that line sit seven small dots — a <b>rolling week</b>: the right-most dot is <b>today</b>, and the six to its left are the six days before, oldest on the far left. A <b>filled</b> dot means you showered cold that day; an <b>empty circle</b> means you didn't (or, for today, not yet). That's all — no rings or extra marks. Every morning the row moves along by one day, so it never starts empty on a Monday. The dots follow whichever profile is chosen, and appear once that profile has its first shower.</p>
           <p><b>The home screen always fits.</b> Whatever appears at the top — the week dots, the backup reminder, the “Ready for more?” offer — the <b>START</b> button always stays fully on screen, clear of the bottom edge and the 3:00 / 6:00 / 9:00 buttons. On a smaller iPhone the big dial simply <b>shrinks just enough to make room</b> (the number inside shrinks with it, so it stays inside the ring), and grows back as soon as the space is free again — for example once you've dealt with the backup reminder. The dial in the shower itself is always full size.</p>
         </div>
       </details>
@@ -1384,26 +1384,24 @@
     row.dataset.streak = String(n);
     row.dataset.offer = offer ? '1' : '0';
   }
-  /* This week as seven dots, Monday first (Swedish weeks). Built from calendar
-     dates, not by adding 24-hour steps, so the clock change can't shift a day.
-     data-days ("1010000") and data-today (0–6) are what the UI tests read. */
+  /* The last seven days as seven dots, oldest on the left, today on the
+     right. Built from calendar dates, not by subtracting 24-hour steps, so the
+     clock change can't shift a day. data-days ("0001101", today last) is what
+     the UI tests read. */
   function renderWeekDots(s){
     const wrap = $('weekDots');
     if(!s.length){ wrap.classList.add('hide'); wrap.innerHTML = ''; wrap.dataset.days = ''; return; }
     const days = new Set(s.map(x => dayKey(x.t)));
     const now = new Date();
-    const back = (now.getDay() + 6) % 7;            // 0 = Monday
     let html = '', bits = '';
-    for(let i = 0; i < 7; i++){
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - back + i);
+    for(let i = 6; i >= 0; i--){                     // six days ago … today
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
       const did = days.has(dayKey(d.getTime()));
-      const cls = (did ? 'did' : (i > back ? 'future' : '')) + (i === back ? ' today' : '');
-      html += `<i class="${cls.trim()}"></i>`;
+      html += did ? '<i class="did"></i>' : '<i></i>';
       bits += did ? '1' : '0';
     }
     wrap.innerHTML = html;
     wrap.dataset.days = bits;
-    wrap.dataset.today = String(back);
     wrap.classList.remove('hide');
   }
   function buildPresets(){
@@ -2160,6 +2158,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.37', date: '2026-10-13 15:15', title: 'Your last seven days, simply',
+      what: 'The seven dots on the home screen are now a <b>rolling week</b>: the right-most dot is <b>today</b> and the six to its left are the six days before it, so the row never starts empty on a Monday — every morning it simply moves along by one day. And they are as plain as they can be: a day you showered is a <b>filled dot</b>, a day you didn\'t is an <b>empty circle</b>. The extra ring around today and the faint days-to-come are gone. Details in <b>How this works → Getting started</b>.',
+      benefit: 'Your last week reads at a glance, with nothing extra to look at.' },
     { v: 'v1.36', date: '2026-10-13 14:40', title: 'The top bar moves out of the blur',
       what: 'Your name chip, Stats and Settings at the top of the home screen still looked <b>fuzzy</b>. The real cause was iPhone itself: when the app is opened from the Home Screen, iOS lays a <b>soft blur</b> over the strip just under the clock and battery, strongest right under the clock and fading out about two finger-widths lower — and the top bar sat right inside it. It now starts <b>below the blur</b>, so all three are sharp. The back button and title at the top of <b>Stats</b> and <b>Settings</b> moved down the same way. This only happens on an iPhone with that strip; everywhere else nothing moves.',
       benefit: 'The controls at the top are crisp, not hazy.' },
