@@ -642,11 +642,11 @@
     <span class="ver" id="appVer" data-testid="app-version"></span>
   </header>
 
-  <div id="backupNudge" class="nudge hide">
+  <div id="backupNudge" class="nudge hide" data-testid="backup-nudge">
     <span class="nicon">🗄️</span>
     <span class="ntext">Time for a backup — keep your history safe.</span>
     <button id="backupNow" class="nbtn">Back up</button>
-    <button id="backupDismiss" class="nx" aria-label="Dismiss reminder">✕</button>
+    <button id="backupDismiss" class="nx" aria-label="Dismiss reminder" data-testid="backup-dismiss">✕</button>
   </div>
 
   <main>
@@ -862,7 +862,7 @@
           <p>The button is a signal in itself: <b>red</b> while you're short of your goal, <b>green</b> the moment you've made it, and <b>gold</b> if you go past your longest-ever shower.</p>
           <p>Under the title, one line tells you <b>how many days running</b> you've kept it up and <b>how long your last shower was</b>. It takes the place of the “set your goal” tagline rather than adding a line to the screen — so the START button keeps its distance from the presets. Before your first shower the tagline shows instead, and the line disappears with everything else once a session starts.</p>
           <p><b>This week, as seven dots.</b> Right under that line sit seven small dots — one for each day of this week, <b>Monday on the left, Sunday on the right</b>. A <b>filled</b> dot means you showered cold that day. <b>Today</b> has a ring around it, so you always know where you are in the week — empty with a ring means today's shower is still to come, filled with a ring means it's done. Days you missed earlier in the week show as an <b>empty circle</b>; the days still ahead are <b>fainter</b> still. On Monday morning a fresh row starts. The dots follow whichever profile is chosen, and appear once that profile has its first shower.</p>
-          <p>To make room for the dots on smaller iPhones, the big dial on the home screen is a touch smaller there — the START button keeps the same distance from the 3:00 / 6:00 / 9:00 buttons as before. The dial in the shower itself is unchanged.</p>
+          <p><b>The home screen always fits.</b> Whatever appears at the top — the week dots, the backup reminder, the “Ready for more?” offer — the <b>START</b> button always stays fully on screen, clear of the bottom edge and the 3:00 / 6:00 / 9:00 buttons. On a smaller iPhone the big dial simply <b>shrinks just enough to make room</b> (the number inside shrinks with it, so it stays inside the ring), and grows back as soon as the space is free again — for example once you've dealt with the backup reminder. The dial in the shower itself is always full size.</p>
         </div>
       </details>
       <details class="acc">
@@ -1333,6 +1333,7 @@
     document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', +p.dataset.s === goal));
     renderHomeStat();
     renderLadder();
+    fitHome();
   }
   /* One line saying where you stand, on the one screen where your glasses are
      still on. Lives in <header>, so body.running hides it with everything else. */
@@ -1539,6 +1540,7 @@
     $('backupNudge').classList.add('hide');
     // strip the screen back for glasses-off reading, and reset the phase bars
     document.body.classList.add('running');
+    fitHome();                                      // the shower dial is always full size
     $('segbar').classList.remove('hide');
     segPct[0] = segPct[1] = segPct[2] = -1; setSegs(0);
     const b = $('startBtn'); b.textContent = '■ STOP'; b.classList.add('stop');
@@ -2121,10 +2123,40 @@
     const snoozed = snooze && (now - snooze) < 7 * DAY;
     const enough = users.reduce((n, u) => n + loadSessions(u.id).length, 0) >= 5;
     el.classList.toggle('hide', !(due && enough && !snoozed && phase === 'idle'));
+    fitHome();
+  }
+
+  /* The home screen must always fit. Whatever turns up above it — the backup
+     reminder, the week dots, the "ready for more?" offer — the START button
+     stays on screen and clear of the bottom edge. The big idle dial is the one
+     thing that can give way, so it shrinks by exactly the overflow (never below
+     140 px) and goes back to its normal size as soon as there is room. In the
+     shower the dial is always its full size. data-fit is for the UI tests. */
+  function fitHome(){
+    const dial = document.querySelector('.dial'), readout = dial.querySelector('.readout');
+    dial.style.width = ''; readout.style.transform = '';
+    let fit = 0;
+    if(!document.body.classList.contains('running')){
+      const btn = $('startBtn').getBoundingClientRect();
+      const padB = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+      const over = Math.ceil(btn.bottom - (window.innerHeight - padB));
+      if(over > 0){
+        fit = over;
+        const full = dial.offsetWidth, w = Math.max(140, full - over);
+        dial.style.width = w + 'px';
+        // the digits are sized to the screen, not the dial — shrink them with it
+        // so they stay inside the ring
+        readout.style.transform = 'scale(' + (w / full).toFixed(3) + ')';
+      }
+    }
+    document.body.dataset.fit = String(fit);
   }
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.34', date: '2026-10-13 12:50', title: 'START always fits on the screen',
+      what: 'On smaller iPhones the monthly <b>backup reminder</b> could push the <b>START</b> button partly or completely off the bottom of the home screen — up to half the button on an iPhone SE. The big dial on the home screen now <b>shrinks just enough to make room</b> for whatever is showing at the top (the reminder, the week dots, the “Ready for more?” offer), with the number inside shrinking along with it so it stays inside the ring, and it grows back the moment the space is free again. The dial in the shower is unchanged. Details in <b>How this works → Getting started</b>.',
+      benefit: 'The one button you need is always on the screen, on every iPhone.' },
     { v: 'v1.33', date: '2026-10-13 12:05', title: 'Your face at the finish',
       what: 'When you stop, the finish screen now shows <b>your profile photo</b> big at the top, inside a glowing ring in the <b>colour of the verdict</b> — <b>green</b> for a goal made, <b>amber</b> for so close, <b>icy blue</b> for stopped short and <b>gold</b>, with a little pop, for a new personal best. It appears only for a profile that has a photo; without one the finish screen is exactly as before, with no letter in its place. Full details in <b>How this works → Reading it with no glasses</b>.',
       benefit: 'The finish feels like yours, and in a shared household it shows whose shower was just saved — still without a word to read.' },
@@ -2356,6 +2388,9 @@
     document.querySelectorAll('#seg button').forEach(x => x.classList.toggle('active', x === b));
     renderChart();
   });
+
+  // turning the phone, or the screen changing size, re-fits the home screen
+  window.addEventListener('resize', () => fitHome());
 
   // any tap wakes the audio engine (iOS blocks audio until a gesture)
   const unlockAudio = () => { if(audio && audio.state === 'suspended') audio.resume(); };
