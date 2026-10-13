@@ -1,0 +1,15 @@
+{
+  "name": "ams-coldshower",
+  "version": "1.0.0",
+  "description": "Cold shower timer PWA — countdown to a goal, phase colours, minute beeps, profiles and stats.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:ui": "playwright test",
+    "start": "python3 -m http.server 7791"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

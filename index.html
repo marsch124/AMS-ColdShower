@@ -128,9 +128,9 @@
 
   /* top bar */
   .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .chip{ display:flex; align-items:center; gap:8px; padding:7px 12px 7px 8px; border-radius:999px;
+  .chip{ display:flex; align-items:center; gap:8px; padding:5px 12px 5px 6px; border-radius:999px;
          border:1px solid var(--line); background:var(--card); color:var(--ink); font-size:15px; font-weight:600;}
-  .chip .av{ width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  .chip .av{ width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
              font-size:13px; font-weight:800; color:#04121f; background:linear-gradient(180deg,#a6ecff,#63d0f2);}
   .chip .caret{ color:var(--ice-dim); font-size:12px; }
   .iconbtn{ width:42px; height:42px; border-radius:50%; border:1px solid var(--line); background:var(--card);
@@ -356,6 +356,29 @@
   .urow .tick{ color:var(--go); font-weight:900; }
   .urow .mini{ width:34px; height:34px; border-radius:9px; border:1px solid var(--line);
                background:transparent; color:var(--ink); font-size:15px; }
+  /* ---- profile photos ----
+     A face is recognised at a glance where an initial has to be read. Any .av
+     takes a photo as an inline background-image; .pic hides the letter under it. */
+  .av{ flex:0 0 auto; }
+  /* !important because the chip and list avatars set their gradient with the
+     `background` shorthand, which resets size and position — the photo would
+     otherwise show only its top-left corner. */
+  .av.pic{ font-size:0 !important; background-size:cover !important; background-position:center !important;
+           background-repeat:no-repeat !important; background-origin:border-box !important; }
+  .urow .avwrap{ position:relative; flex:0 0 auto; padding:0; border:none; background:none; border-radius:50%; }
+  .urow .avwrap .av{ width:40px; height:40px; font-size:16px; }
+  .urow .avwrap .cam{ position:absolute; right:-4px; bottom:-4px; width:20px; height:20px; border-radius:50%;
+                      background:#08243b; border:1px solid var(--line);
+                      display:flex; align-items:center; justify-content:center; }
+  .urow .avwrap .cam svg{ width:12px; height:12px; display:block; }
+  .av.big{ width:136px; height:136px; border-radius:50%; margin:6px auto 4px; display:flex;
+           align-items:center; justify-content:center; font-size:58px; font-weight:800; color:#04121f;
+           background-color:#63d0f2; background-image:linear-gradient(180deg,#a6ecff,#63d0f2);
+           border:3px solid rgba(127,227,255,.35); padding:0; }
+  .av.sm{ width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+          font-size:13px; font-weight:800; color:#04121f; background-image:linear-gradient(180deg,#a6ecff,#63d0f2); }
+  #photoSheet .btn.ghost{ max-width:none; }
+  .btn.ghost.danger{ border-color:rgba(255,90,110,.4); color:#ff8f9c; }
   .addrow{ display:flex; gap:8px; }
   .addrow input{ flex:1; padding:13px; border-radius:12px; border:1px solid var(--line);
                  background:rgba(0,0,0,.25); color:var(--ink); font-size:16px; }
@@ -365,7 +388,7 @@
   /* stats */
   .statshead{ display:flex; align-items:center; justify-content:space-between;
               padding: max(env(safe-area-inset-top),12px) 16px 10px; }
-  .statstitle{ font-size:17px; font-weight:800; letter-spacing:.02em; }
+  .statstitle{ font-size:17px; font-weight:800; letter-spacing:.02em; display:flex; align-items:center; gap:8px; }
   .statsbody{ flex:1; overflow-y:auto; padding:6px 16px calc(env(safe-area-inset-bottom) + 24px); }
   .tiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
   .tile{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 10px; text-align:center; }
@@ -473,11 +496,11 @@
 </head>
 <body>
   <div class="topbar" id="topbar">
-    <button class="chip" id="userChip">
-      <span class="av" id="userAv">Y</span><span id="userName">You</span><span class="caret">▾</span>
+    <button class="chip" id="userChip" data-testid="user-chip">
+      <span class="av" id="userAv" data-testid="user-chip-av">Y</span><span id="userName">You</span><span class="caret">▾</span>
     </button>
     <div class="setgroup">
-      <button class="iconbtn" id="statsBtn" aria-label="Statistics">
+      <button class="iconbtn" id="statsBtn" aria-label="Statistics" data-testid="stats-btn">
         <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M2.5 16.4 C5 16.2 6.1 11.3 9 11.9 C11.6 12.4 12.6 7.4 15.4 6.1 C17.6 5.1 19.4 4.6 21.5 3.4 L21.5 20 L2.5 20 Z"
                 fill="#7fe3ff" opacity="0.16"/>
@@ -486,7 +509,7 @@
           <circle cx="21.5" cy="3.5" r="2.4" fill="#7fe3ff"/>
         </svg>
       </button>
-      <button class="iconbtn" id="settingsBtn" aria-label="Settings">
+      <button class="iconbtn" id="settingsBtn" aria-label="Settings" data-testid="settings-btn">
         <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
           <defs>
             <mask id="cogHole">
@@ -519,7 +542,7 @@
     <h1>Cold Shower</h1>
     <p class="sub" id="tagline">Set your goal &amp; brace yourself</p>
     <span class="homestat hide" id="homeStat"></span>
-    <span class="ver" id="appVer"></span>
+    <span class="ver" id="appVer" data-testid="app-version"></span>
   </header>
 
   <div id="backupNudge" class="nudge hide">
@@ -572,7 +595,7 @@
   </main>
 
   <footer>
-    <button class="btn" id="startBtn">▶ START</button>
+    <button class="btn" id="startBtn" data-testid="start-btn">▶ START</button>
   </footer>
 
   <!-- shown only on an Apple Shortcut launch: one tap anywhere wakes the sound
@@ -599,7 +622,7 @@
   </div>
 
   <!-- user picker sheet -->
-  <div id="sheet" class="overlay hide">
+  <div id="sheet" class="overlay hide" data-testid="user-sheet">
     <div style="flex:1" id="sheetBackdrop"></div>
     <div class="sheetcard">
       <div class="sheettitle">Who's showering?</div>
@@ -608,7 +631,20 @@
         <input id="newUser" placeholder="Add a name…" maxlength="20" autocomplete="off" />
         <button id="addUser" class="minibtn">Add</button>
       </div>
-      <button id="sheetClose" class="btn ghost">Done</button>
+      <button id="sheetClose" class="btn ghost" data-testid="user-sheet-done">Done</button>
+    </div>
+  </div>
+
+  <!-- one profile's photo: big preview, choose / change, remove (quiet, last) -->
+  <div id="photoSheet" class="overlay hide" data-testid="photo-sheet">
+    <div style="flex:1" id="photoBackdrop"></div>
+    <div class="sheetcard">
+      <div class="sheettitle" id="photoName">You</div>
+      <button class="av big" id="photoBig" data-testid="photo-preview" aria-label="Choose photo">Y</button>
+      <input type="file" id="photoFile" accept="image/*" class="hide" data-testid="photo-input" />
+      <button id="photoPick" class="btn mini2" data-testid="photo-pick">Choose photo</button>
+      <button id="photoDone" class="btn ghost" data-testid="photo-done">Done</button>
+      <button id="photoRemove" class="btn ghost danger hide" data-testid="photo-remove">Remove photo</button>
     </div>
   </div>
 
@@ -616,7 +652,7 @@
   <div id="stats" class="overlay hide">
     <div class="statshead">
       <button class="iconbtn" id="statsBack" aria-label="Back">‹</button>
-      <div class="statstitle">Stats · <span id="statsUser">You</span></div>
+      <div class="statstitle"><span class="av sm" id="statsAv" data-testid="stats-av">Y</span>Stats · <span id="statsUser">You</span></div>
       <div style="width:42px"></div>
     </div>
     <div class="statsbody">
@@ -746,6 +782,7 @@
         <summary>Profiles &amp; stats <span class="chev">›</span></summary>
         <div class="accbody">
           <p><b>Add a profile</b> per person from the name chip at the top left. Each keeps their own goal and their own history.</p>
+          <p><b>Give each profile a photo</b>: open the name chip and tap the round picture next to a name (the one with the little camera). <b>Choose photo</b> lets you take a new picture or pick one from your library; the app cuts it to a neat circle by itself. The face then shows in the name chip, in the list and on the stats screen, so you can see whose shower it is at a glance. <b>Change photo</b> swaps it and <b>Remove photo</b> brings back the initial. Photos are part of every backup.</p>
           <p>The <b>stats screen</b> shows sessions, total time, your longest shower, goal-hit rate, day-streak and average — plus recent-session, calendar and weekly charts. Record-setting sessions are marked with a 🏅 in the recent list.</p>
           <p>Tap <b>Adjust</b> under “Recent sessions” to fix your history: <b>add a shower you forgot to time</b> (set its date, length and goal) or <b>delete one that was logged by mistake</b>.</p>
           <p>The list starts with your <b>20 most recent</b> showers and a <b>Show older</b> button underneath brings back 20 more each time, all the way to your first. Older sessions can be adjusted and deleted just like recent ones.</p>
@@ -1349,11 +1386,89 @@
     ov.classList.remove('hide');
   }
 
+  /* ============ profile photos ============
+     One small square JPEG per profile in its own cst.photo.<id> key — so it
+     rides along in every backup and restore with no extra code, and a profile
+     without one simply shows its initial, exactly as before. */
+  const photoKey = id => 'cst.photo.' + id;
+  const loadPhoto = id => { try { return LS.getItem(photoKey(id)); } catch(e){ return null; } };
+  // Paint any avatar: the photo if there is one, otherwise the initial.
+  // data-photo is written from what storage actually holds, never from intent.
+  function paintAv(el, u){
+    const p = loadPhoto(u.id);
+    el.textContent = initial(u.name);
+    el.style.backgroundImage = p ? `url("${p}")` : '';
+    el.classList.toggle('pic', !!p);
+    el.dataset.photo = p ? '1' : '0';
+  }
+  // Whatever the camera hands over (12–48 MP, any shape) becomes a 320 px
+  // square cut from the middle — a little ABOVE the middle on an upright shot,
+  // where the face usually is. About 25 KB, so a whole household fits easily.
+  const PHOTO_PX = 320;
+  function makePhoto(file){
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try{
+          const w = img.naturalWidth, h = img.naturalHeight, side = Math.min(w, h);
+          if(!side) throw new Error('empty image');
+          const sx = (w - side) / 2;
+          const sy = h > w ? (h - side) * 0.3 : (h - side) / 2;
+          const c = document.createElement('canvas'); c.width = c.height = PHOTO_PX;
+          const g = c.getContext('2d');
+          g.fillStyle = '#08243b'; g.fillRect(0, 0, PHOTO_PX, PHOTO_PX);   // transparent PNGs
+          g.drawImage(img, sx, sy, side, side, 0, 0, PHOTO_PX, PHOTO_PX);
+          resolve(c.toDataURL('image/jpeg', 0.82));
+        } catch(e){ reject(e); }
+        finally { URL.revokeObjectURL(url); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('unreadable')); };
+      img.src = url;
+    });
+  }
+  let photoFor = null;                               // which profile the photo panel is for
+  function openPhoto(id){ photoFor = id; renderPhotoSheet(); $('photoSheet').classList.remove('hide'); }
+  function closePhoto(){ $('photoSheet').classList.add('hide'); photoFor = null; }
+  function renderPhotoSheet(){
+    const u = users.find(x => x.id === photoFor); if(!u) return;
+    const has = !!loadPhoto(u.id);
+    $('photoName').textContent = u.name;
+    paintAv($('photoBig'), u);
+    $('photoPick').textContent = has ? 'Change photo' : 'Choose photo';
+    $('photoRemove').classList.toggle('hide', !has);
+  }
+  function refreshAvatars(){ refreshChip(); renderPhotoSheet(); renderUserList(); }
+  async function setPhoto(file){
+    const id = photoFor; if(!id || !file) return;
+    let data;
+    try{ data = await makePhoto(file); }
+    catch(e){ alert("That picture couldn't be opened — try another one."); return; }
+    if(!lsSet(photoKey(id), data)){
+      alert("The photo couldn't be saved — the phone refused the write (storage may be full).");
+      return;
+    }
+    refreshAvatars();
+  }
+  function removePhoto(){
+    const u = users.find(x => x.id === photoFor); if(!u) return;
+    if(!confirm(`Remove ${u.name}'s photo?`)) return;
+    try{ LS.removeItem(photoKey(u.id)); }catch(e){}
+    refreshAvatars();
+  }
+  // hand-drawn camera for the little badge on each avatar in the list
+  const CAM_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#7fe3ff" stroke-width="2.6" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M3.3 8.3 C3.2 7 4 6.3 5.1 6.3 L7.6 6.2 L9.2 3.9 L14.7 4 L16.3 6.3 L18.9 6.2 ' +
+    'C20.1 6.3 20.8 7.1 20.7 8.3 L20.8 17.9 C20.8 19.1 20 19.8 18.9 19.8 L5.2 19.9 C4 19.9 3.2 19.1 3.3 17.9 Z"/>' +
+    '<circle cx="12.1" cy="12.7" r="3.7"/></svg>';
+
   /* ============ users UI ============ */
   function refreshChip(){
     const u = activeUser();
     $('userName').textContent = u.name;
-    $('userAv').textContent = initial(u.name);
+    paintAv($('userAv'), u);
+    paintAv($('statsAv'), u);
     $('statsUser').textContent = u.name;
   }
   function openSheet(){ renderUserList(); $('sheet').classList.remove('hide'); }
@@ -1363,15 +1478,19 @@
     users.forEach(u => {
       const row = document.createElement('div');
       row.className = 'urow' + (u.id === activeId ? ' active' : '');
+      row.dataset.testid = 'user-row';
+      row.dataset.user = u.id;
       row.innerHTML =
-        `<span class="av">${initial(u.name)}</span>` +
+        `<button class="avwrap" data-act="photo" data-testid="user-row-photo" aria-label="Photo">` +
+          `<span class="av"></span><span class="cam">${CAM_SVG}</span></button>` +
         `<span class="nm"></span>` +
         (u.id === activeId ? `<span class="tick">✓</span>` : '') +
         `<button class="mini" data-act="rename" title="Rename">✎</button>` +
         (users.length > 1 ? `<button class="mini" data-act="delete" title="Delete">🗑</button>` : '');
       row.querySelector('.nm').textContent = u.name;
       row.querySelector('.nm').onclick = () => selectUser(u.id);
-      row.querySelector('.av').onclick = () => selectUser(u.id);
+      paintAv(row.querySelector('.av'), u);
+      row.querySelector('[data-act=photo]').onclick = () => openPhoto(u.id);
       const rn = row.querySelector('[data-act=rename]'); if(rn) rn.onclick = () => renameUser(u.id);
       const dl = row.querySelector('[data-act=delete]'); if(dl) dl.onclick = () => deleteUser(u.id);
       list.appendChild(row);
@@ -1398,7 +1517,7 @@
     const u = users.find(x => x.id === id);
     if(!confirm(`Delete “${u.name}” and their history? This can’t be undone.`)) return;
     users = users.filter(x => x.id !== id); saveUsers(users);
-    LS.removeItem(goalKey(id)); LS.removeItem(sessKey(id));
+    LS.removeItem(goalKey(id)); LS.removeItem(sessKey(id)); LS.removeItem(photoKey(id));
     if(activeId === id){ activeId = users[0].id; lsSet('cst.active', activeId); loadGoal(); refreshChip(); renderIdle(); }
     renderUserList();
   }
@@ -1743,6 +1862,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.27', date: '2026-10-13 08:20', title: 'A photo for every profile',
+      what: 'Each profile can now have a <b>photo</b> instead of just its first letter. Open the name chip at the top left and tap the round picture next to a name — the one with the little camera — then <b>Choose photo</b> to take a new picture or pick one from your library. The app trims it to a neat circle by itself, a little above the middle on an upright photo so the face stays in. The face then appears in the <b>name chip</b>, in the <b>Who’s showering?</b> list and on the <b>stats screen</b>. <b>Change photo</b> swaps it and <b>Remove photo</b> brings the initial back. Photos are kept small, so they take almost no room, and they are included in every <b>backup and restore</b>.',
+      benefit: 'You see whose shower it is at a glance, without having to read a name.' },
     { v: 'v1.26', date: '2026-09-10 18:40', title: 'The backup button really saves now',
       what: 'Export &amp; backup used a plain download link, which does nothing inside an app opened from the Home Screen — so it could save no file at all, and then note that you had backed up anyway, which also switched off the monthly reminder to do it. It now hands the file to the normal iPhone share sheet, so you can drop it into Files, Mail or anywhere else, and it only records a backup once a file has actually been saved. Cancelling the share sheet says Cancelled and does not count.',
       benefit: 'Your shower history can no longer be reported as safely backed up when no backup was made.' },
@@ -1885,6 +2007,16 @@
   $('sheetClose').onclick = closeSheet;
   $('sheetBackdrop').onclick = closeSheet;
   $('addUser').onclick = addUser;
+  $('photoPick').onclick = () => $('photoFile').click();
+  $('photoBig').onclick = () => $('photoFile').click();
+  $('photoFile').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';                             // allow re-picking the same picture
+    if(f) setPhoto(f);
+  });
+  $('photoRemove').onclick = removePhoto;
+  $('photoDone').onclick = closePhoto;
+  $('photoBackdrop').onclick = closePhoto;
   $('newUser').addEventListener('keydown', e => { if(e.key === 'Enter') addUser(); });
 
   $('statsBtn').onclick = openStats;
@@ -1968,6 +2100,7 @@
   });
 
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js?v=' + VERSIONLOG[0].v).catch(()=>{});
+  document.body.dataset.ready = '1';                 // for the UI tests: init has run to the end
 })();
 </script>
 </body>
