@@ -126,6 +126,28 @@
   body.running.done::before,
   body.running.gold::before{ opacity:0; }
 
+  /* ---- rising water ----
+     The screen fills from the bottom as the countdown runs: a quarter full at a
+     quarter of the goal, half full at half time, brim-full at the goal, in the
+     colour of the phase you're in. Where the water line is says how far along
+     you are, from across the bathroom. Behind everything (z-index:-1, before
+     body::after in paint order, so the green / gold wash simply covers it). */
+  .waterfill{ position:fixed; left:0; right:0; bottom:0; height:100%; z-index:-1; pointer-events:none;
+              transform:translateY(100%); opacity:0; transition:opacity .6s ease; }
+  /* body + wave crest share ONE opacity, so where they meet there is no seam */
+  .waterfill .wtint{ position:absolute; inset:0; opacity:.14; }
+  .waterfill .wbody{ position:absolute; inset:0; background:var(--ph, #3ea6ff); }
+  /* the water line: a slow, shallow wave drifting sideways — calm, never a strobe */
+  .waterfill .wave{ position:absolute; left:0; top:-17px; width:200%; height:18px; overflow:visible;
+                    animation:wavedrift 9s linear infinite; }
+  .waterfill .wave path{ fill:var(--ph, #3ea6ff); }
+  /* the bright surface line is what the eye reads as "the water level" */
+  .waterfill .wline path{ fill:none; stroke:var(--ph, #3ea6ff); stroke-width:3; opacity:.6;
+                          vector-effect:non-scaling-stroke; }
+  @keyframes wavedrift{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+  body.running.water-on .waterfill{ opacity:1; }
+  body.done .waterfill, body.gold .waterfill{ opacity:0 !important; }
+
   /* top bar */
   .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .chip{ display:flex; align-items:center; gap:8px; padding:5px 12px 5px 6px; border-radius:999px;
@@ -527,6 +549,17 @@
 </style>
 </head>
 <body>
+  <div class="waterfill" id="water" aria-hidden="true" data-testid="water">
+    <div class="wtint">
+      <svg class="wave" viewBox="0 0 800 18" preserveAspectRatio="none">
+        <path d="M0 9 C50 2 150 2 200 9 C250 16 350 16 400 9 C450 2 550 2 600 9 C650 16 750 16 800 9 L800 19 L0 19 Z"/>
+      </svg>
+      <div class="wbody"></div>
+    </div>
+    <svg class="wave wline" viewBox="0 0 800 18" preserveAspectRatio="none">
+      <path d="M0 9 C50 2 150 2 200 9 C250 16 350 16 400 9 C450 2 550 2 600 9 C650 16 750 16 800 9"/>
+    </svg>
+  </div>
   <div class="topbar" id="topbar">
     <button class="chip" id="userChip" data-testid="user-chip">
       <span class="av" id="userAv" data-testid="user-chip-av">Y</span><span id="userName">You</span><span class="caret">▾</span>
@@ -771,10 +804,15 @@
           <button class="tsw" id="holdStopToggle" role="switch" aria-checked="true" aria-label="Toggle hold to stop"></button>
         </div>
         <div class="togg">
+          <span>Rising water</span>
+          <button class="tsw" id="waterToggle" role="switch" aria-checked="true" aria-label="Toggle rising water" data-testid="water-toggle"></button>
+        </div>
+        <div class="togg">
           <span>Breathe with the ring</span>
           <button class="tsw" id="breathToggle" role="switch" aria-checked="true" aria-label="Toggle breathing guide" data-testid="breath-toggle"></button>
         </div>
-        <p style="margin-top:16px;"><b>Breathe with the ring</b> guides your breathing through the first minute, when the cold hits hardest: a soft band of light swells out from the ring for four seconds — breathe in — and sinks back for six — breathe out. Six slow breaths, then it stops by itself.</p>
+        <p style="margin-top:16px;"><b>Rising water</b> slowly fills the screen from the bottom while the countdown runs — half full at half time, full at your goal — in the colour of the phase you're in. How high the water stands tells you how far along you are, from across the bathroom.</p>
+        <p><b>Breathe with the ring</b> guides your breathing through the first minute, when the cold hits hardest: a soft band of light swells out from the ring for four seconds — breathe in — and sinks back for six — breathe out. Six slow breaths, then it stops by itself.</p>
         <p>With <b>hold the button</b> on, <b>■ STOP</b> has to be held for about a second — a white bar sweeps across the button as you hold, and letting go early cancels it. Wet hands and a phone at chest height make a single accidental tap far too easy, and that tap used to end your shower.</p>
         <p>Whatever happens, the app <b>stops itself</b> after 15 minutes of bonus time and saves the session. If you step out and forget the phone, it can no longer count up all morning holding the screen awake and then log a nonsense time.</p>
       </div>
@@ -815,6 +853,17 @@
           <p><b>Nothing else moves.</b> The band only ever grows <b>outward</b>, away from the number, so the digits never shift, shrink or get covered — you can keep reading the time while you breathe.</p>
           <p><b>No glasses needed.</b> It is one big, slow movement of light — you follow it the same way you would follow someone's hand rising and falling, without having to read or recognise anything.</p>
           <p><b>Turning it off:</b> Settings → <b>While it runs</b> → <b>Breathe with the ring</b>. The choice is remembered on this phone. Try it with the <b>30-second test timer</b> in Settings to see it without a real shower.</p>
+        </div>
+      </details>
+      <details class="acc">
+        <summary>Rising water <span class="chev">›</span></summary>
+        <div class="accbody">
+          <p><b>The screen fills up like a glass.</b> From the moment the countdown starts (after the lead-in), a tint of colour rises slowly from the bottom of the screen, with a bright, gently moving <b>water line</b> on top.</p>
+          <p><b>How high it stands is how far you've come:</b> a quarter of the way up at a quarter of your goal, <b>half way up at half time</b>, and right up to the top at the goal itself. It rises smoothly, second by second, so you never have to read a number to know roughly where you are — you can tell from across the bathroom with your eyes half shut.</p>
+          <p><b>It takes the colour of the phase you're in</b>: <b>blue</b> for the first third, <b>yellow</b> for the second, <b>green</b> for the last — the same colours as the ring, the digits and the three bars, so everything on the screen agrees.</p>
+          <p><b>At the goal</b> the water is brim-full and the familiar <b>green finish</b> takes over the whole screen; the water steps aside for it. If you beat your record before the goal, the <b>gold</b> screen takes over in the same way.</p>
+          <p><b>It never gets in the way.</b> The water sits <b>behind</b> everything — the number, the ring, the bars and the STOP button are always drawn on top of it — and the wave on its surface drifts slowly sideways, never flickers.</p>
+          <p><b>Turning it off:</b> Settings → <b>While it runs</b> → <b>Rising water</b>. The choice is remembered on this phone.</p>
         </div>
       </details>
       <details class="acc">
@@ -1001,6 +1050,7 @@
   const mediaChOn = () => prefOn('cst.mediaCh', true);
   const holdStopOn = () => prefOn('cst.holdStop', true);
   const breathOn = () => prefOn('cst.breathGuide', true);
+  const waterOn = () => prefOn('cst.water', true);
   const LEAD_CHOICES = [10, 20, 30];
   function leadSecs(){
     const n = parseInt(LS.getItem('cst.leadSecs') || '10', 10);
@@ -1014,6 +1064,7 @@
     setToggle($('mediaChToggle'), mediaChOn());
     setToggle($('holdStopToggle'), holdStopOn());
     setToggle($('breathToggle'), breathOn());
+    setToggle($('waterToggle'), waterOn());
     const n = leadSecs();
     document.querySelectorAll('#leadLen button').forEach(b => b.classList.toggle('active', +b.dataset.s === n));
   }
@@ -1202,6 +1253,19 @@
       if(segPct[i] !== pct){ segPct[i] = pct; segFills[i].style.width = pct + '%'; }
     }
   }
+  /* Rising water: level in thousandths of the screen (0–1000), or -1 = off.
+     Only written when it changes, since tick() runs every frame. data-level is
+     what the UI tests read. */
+  const water = $('water');
+  let waterLvl = -1;
+  function setWater(frac){
+    const lvl = frac === null ? -1 : Math.round(Math.max(0, Math.min(1, frac)) * 1000);
+    if(lvl === waterLvl) return;
+    waterLvl = lvl;
+    document.body.classList.toggle('water-on', lvl >= 0);
+    water.style.transform = 'translateY(' + (lvl < 0 ? 100 : 100 - lvl / 10) + '%)';
+    water.dataset.level = lvl < 0 ? '' : String(lvl);
+  }
   /* The gold record mark: degrees clockwise from 12 o'clock, or null = hidden.
      data-at is what the UI tests read. */
   const pbMark = $('pbMark');
@@ -1317,6 +1381,7 @@
         // a record shorter than the goal: mark where the shrinking ring will
         // be when you equal it (a record beyond the goal waits for the bonus)
         placePbMark(!pbHit && pbTarget < goal ? (1 - pbTarget / goal) * 360 : null);
+        setWater(waterOn() ? frac : null);
       }
     }
     if(phase === 'bonus'){
@@ -1339,6 +1404,7 @@
   function reachGoal(){
     phase = 'bonus'; lastBeepSec = null; chime();
     if(document.body.classList.contains('breathing')) setBreath('done');   // a goal under a minute
+    if(waterLvl >= 0) setWater(1);                  // brim-full; the green wash now covers it
     document.body.classList.add('done');            // persistent green background
     document.documentElement.classList.add('done'); // green reaches the bottom safe-area too
     document.body.classList.remove('flash'); void document.body.offsetWidth;
@@ -1447,6 +1513,7 @@
     if(testMode){ testMode = false; loadGoal(); }   // restore the real goal
     document.body.classList.remove('flash', 'done', 'running', 'gold');
     setBreath('off');
+    setWater(null);
     document.body.style.removeProperty('--ph');
     document.documentElement.classList.remove('done', 'gold');
     $('segbar').classList.add('hide');
@@ -1966,6 +2033,9 @@
 
   /* ============ settings: version log ============ */
   const VERSIONLOG = [
+    { v: 'v1.30', date: '2026-10-13 10:20', title: 'Rising water',
+      what: 'While the countdown runs, the screen now <b>fills slowly from the bottom</b> like a glass of water, with a bright, gently moving water line on top. It is a quarter full at a quarter of your goal, <b>half full at half time</b> and full at the goal, where the green finish takes over. The water takes the colour of the phase you are in — blue, then yellow, then green — and sits behind everything, so the number, ring, bars and STOP button are never covered. Switch it off under <b>Settings → While it runs → Rising water</b>. Full details in <b>How this works → Rising water</b>.',
+      benefit: 'How far along you are can be seen from across the bathroom, without reading a thing.' },
     { v: 'v1.29', date: '2026-10-13 09:40', title: 'A gold mark for your record',
       what: 'Your <b>longest-ever shower</b> now has a <b>gold mark on the ring</b>. If your record is shorter than today\'s goal, the gold bar sits where the shrinking ring will be when you equal it. If your record is longer than the goal, the gold bar appears at the <b>top of the ring</b> once you reach the goal, and a <b>gold line runs round the green ring</b> towards it — when it closes the circle, you have matched your record. Pass it and the whole screen turns gold, as before. There is no mark on a first shower, in the test timer, or once the record has fallen. Full details in <b>How this works → The gold mark for your record</b>.',
       benefit: 'You can see your record coming, not only find out after you have beaten it.' },
@@ -2153,6 +2223,7 @@
   $('goalRepeatToggle').onclick = () => { lsSet('cst.goalRepeat', goalRepeatOn() ? '0' : '1'); syncToggles(); };
   $('holdStopToggle').onclick = () => { lsSet('cst.holdStop', holdStopOn() ? '0' : '1'); syncToggles(); };
   $('breathToggle').onclick = () => { lsSet('cst.breathGuide', breathOn() ? '0' : '1'); syncToggles(); };
+  $('waterToggle').onclick = () => { lsSet('cst.water', waterOn() ? '0' : '1'); syncToggles(); };
   // The breathing guide ends itself after its six breaths (pure CSS); this
   // only notes that it has, and gives the dial its own gentle pulse back.
   $('breath').addEventListener('animationend', e => {

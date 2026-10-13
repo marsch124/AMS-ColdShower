@@ -13,6 +13,9 @@ async function jump(page, ms) {
 
 test('the gold mark shows where your record falls, and goes when you pass it', async ({ page }) => {
     await page.clock.install({ time: new Date('2026-10-14T07:00:00') });
+  // Frozen: time moves ONLY when the test moves it, so a reading can't drift
+  // while an assertion is retrying.
+  await page.clock.pauseAt(new Date('2026-10-14T07:00:01'));
   await page.addInitScript(() => {
     if (localStorage.getItem('seeded')) return;      // only on the first load
     localStorage.setItem('seeded', '1');
